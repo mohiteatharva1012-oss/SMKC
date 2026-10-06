@@ -45,16 +45,11 @@ export default function Dashboard({ stats, hoardings, setActiveTab, setSelectedH
         attribution: '&copy; Google Maps &copy; सांगली मिरज आणि कुपवाड शहर महानगरपालिका',
         maxZoom: 20
       });
-    } else if (tileType === 'hybrid') {
+    } else {
       newLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         subdomains: ['0', '1', '2', '3'],
         attribution: '&copy; Google Satellite &copy; SMKC GIS',
         maxZoom: 20
-      });
-    } else {
-      newLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
       });
     }
     newLayer.addTo(map);
@@ -349,6 +344,63 @@ export default function Dashboard({ stats, hoardings, setActiveTab, setSelectedH
 
       </div>
 
+      {/* 5 Municipal Officers & Dignitaries Gallery */}
+      <div className="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 shadow-xl space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+              <span className="text-[#c62828]">🏛️</span>
+              <span>{lang === 'mr' ? 'पदाधिकारी व प्रशासकीय अधिकारी' : 'Municipal Leadership & Administrative Officers'}</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              {lang === 'mr' ? 'सांगली मिरज आणि कुपवाड शहर महानगरपालिका अधिकृत नेतृत्व' : 'Official Leadership & Sky Signs Regulation Authority'}
+            </p>
+          </div>
+          <span className="text-[10px] text-amber-400 font-mono bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800 self-start sm:self-auto">
+            SMKC Administration
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+          {[
+            { title: 'महापौर', name: 'श्री. धीरज सूर्यवंशी', role: 'प्रथम नागरिक', img: '/assets/dhiraj.png' },
+            { title: 'उपमहापौर', name: 'श्री. गजानन मगदूम', role: 'उपमहापौर', img: '/assets/gajanan.png' },
+            { title: 'महापालिका आयुक्त', name: 'श्रीम. संजीता मोहपात्रा (भा.प्र.से.)', role: 'प्रशासक व आयुक्त', img: '/assets/sanjita.png' },
+            { title: 'अतिरिक्त आयुक्त-१', name: 'श्री. राहुल रोकडे', role: 'प्रशासन', img: '/assets/rahul.png' },
+            { title: 'अतिरिक्त आयुक्त-२', name: 'श्री. नीलेश देशमुख', role: 'अतिक्रमण व आकाशचिन्हे', img: '/assets/nilesh.png' }
+          ].map((lead, idx) => (
+            <div key={idx} className="bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800 shadow-sm text-center p-3 flex flex-col items-center justify-between hover:border-amber-500/40 transition-all group">
+              <div className="w-24 h-28 rounded-xl overflow-hidden bg-slate-900 mb-2 border border-slate-700 shadow-inner flex items-center justify-center">
+                <img 
+                  src={lead.img} 
+                  alt={lead.name} 
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    const filename = lead.img.split('/').pop();
+                    const tried = parseInt(e.target.dataset.tried || '0', 10);
+                    if (tried === 0) {
+                      e.target.dataset.tried = '1';
+                      e.target.src = './assets/' + filename;
+                    } else if (tried === 1) {
+                      e.target.dataset.tried = '2';
+                      e.target.src = './public/assets/' + filename;
+                    } else {
+                      e.target.onerror = null;
+                      e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(lead.name) + '&background=c62828&color=fff&size=200';
+                    }
+                  }}
+                />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-amber-400 block">{lead.title}</span>
+                <span className="text-xs font-bold text-white block truncate max-w-[140px]">{lead.name}</span>
+                <span className="text-[10px] text-slate-400 block">{lead.role}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Interactive Sangli Miraj Kupwad Tri-City Map Section */}
       <div className="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 shadow-2xl space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -389,16 +441,6 @@ export default function Dashboard({ stats, hoardings, setActiveTab, setSelectedH
                 }`}
               >
                 🗺️ Street Map
-              </button>
-              <button
-                onClick={() => setMapTileType('osm')}
-                className={`px-2.5 py-1 rounded transition-all text-xs ${
-                  mapTileType === 'osm'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                🌍 OSM
               </button>
             </div>
 

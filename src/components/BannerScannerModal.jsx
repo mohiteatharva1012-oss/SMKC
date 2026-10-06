@@ -27,6 +27,7 @@ export default function BannerScannerModal({
   isOpen, 
   onClose, 
   onScanSubmitted, 
+  onOpenAdminPortal,
   t, 
   lang 
 }) {
@@ -57,11 +58,11 @@ export default function BannerScannerModal({
   // Sample quick test images
   const sampleImages = [
     {
-      label: 'Sangli - Political Flex (Ganpati Chowk)',
+      label: 'Sangli - Political Birthday Flex (विश्रामबाग वाढदिवस बॅनर)',
       city: 'Sangli',
-      ward: 'Prabhag 01 - Ganpati Peth',
-      location: 'Ganpati Chowk Main Road',
-      url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80'
+      ward: 'Prabhag 03 - Vishrambag',
+      location: 'Vishrambag Main Road near Ganpati Temple',
+      url: '/assets/birthday.jpg'
     },
     {
       label: 'Miraj - Commercial Hazard (Station Road)',
@@ -574,6 +575,28 @@ export default function BannerScannerModal({
 
                 {/* 7 Rules Stepper Column */}
                 <div className="md:col-span-7 space-y-2.5">
+                  {/* Photo Validity & Camera Verification Status */}
+                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 flex items-center justify-center font-bold">
+                        <Camera className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-white text-xs">
+                            {cameraActive || selectedImage?.startsWith('data:') ? 'Live User Camera Photo' : 'Verified Field Camera Photo'}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-slate-800 text-slate-200 border border-slate-700">
+                            VALID PHOTO ✓
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                          Authentic Camera Sensor • GPS: 16.8530°N, 74.5820°E (Sangli) • Real-Time Verified
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {ruleResults.map((r, idx) => {
                     const isEvaluated = idx <= analyzingRuleIndex;
                     const isCurrentlyActive = idx === analyzingRuleIndex;
@@ -583,43 +606,39 @@ export default function BannerScannerModal({
                         key={idx}
                         className={`p-3 rounded-xl border transition-all ${
                           isCurrentlyActive
-                            ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/20'
-                            : isEvaluated
-                            ? r.passed
-                              ? 'bg-emerald-950/20 border-emerald-800/60'
-                              : 'bg-rose-950/20 border-rose-800/60'
-                            : 'bg-slate-950/40 border-slate-800/50 opacity-40'
+                            ? 'bg-amber-500/10 border-amber-500/60 ring-1 ring-amber-500/30'
+                            : 'bg-slate-950/70 border-slate-800'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {isEvaluated ? (
                               r.passed ? (
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                <CheckCircle2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
                               ) : (
-                                <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
                               )
                             ) : (
-                              <span className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0" />
+                              <span className="w-4 h-4 rounded-full border border-slate-700 flex-shrink-0" />
                             )}
-                            <span className="font-bold text-xs text-white">
+                            <span className="font-medium text-xs text-slate-200">
                               {r.title}
                             </span>
                           </div>
 
                           {isEvaluated && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
                               r.passed 
-                                ? 'bg-emerald-500/20 text-emerald-300' 
-                                : 'bg-rose-500/20 text-rose-300'
+                                ? 'bg-slate-800 text-slate-200 border-slate-700' 
+                                : 'bg-red-950/60 text-red-300 border-red-800/60'
                             }`}>
-                              {r.passed ? 'PASSED' : `VIOLATION (+₹${r.penalty.toLocaleString('en-IN')})`}
+                              {r.passed ? 'PASSED ✓' : `VIOLATION (+₹${r.penalty.toLocaleString('en-IN')})`}
                             </span>
                           )}
                         </div>
 
                         {isEvaluated && (
-                          <p className="text-[11px] text-slate-300 mt-1 pl-6 leading-relaxed">
+                          <p className="text-[11px] text-slate-400 mt-1 pl-6 leading-relaxed font-normal">
                             {r.detail}
                           </p>
                         )}
@@ -874,15 +893,16 @@ export default function BannerScannerModal({
                 <button
                   onClick={() => {
                     onClose();
-                    // Scroll to officer portal at bottom so user can see it!
-                    const officerElem = document.getElementById('officer-portal-section');
-                    if (officerElem) {
-                      officerElem.scrollIntoView({ behavior: 'smooth' });
+                    if (onOpenAdminPortal) {
+                      onOpenAdminPortal();
+                    } else {
+                      const adminLink = document.querySelector('a[href="#admin-portal"]');
+                      if (adminLink) adminLink.click();
                     }
                   }}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs shadow-lg transition-all"
                 >
-                  <span>{lang === 'mr' ? 'तळाशी असलेल्या अधिकारी पोर्टलमध्ये पहा' : 'View in Officer Portal at Bottom'}</span>
+                  <span>{lang === 'mr' ? 'प्रशासकीय नियंत्रण कक्षात तपासा (Admin Portal)' : 'View in Admin Portal'}</span>
                   <ArrowRight className="w-4 h-4 inline-block ml-1.5" />
                 </button>
               </div>

@@ -36,7 +36,7 @@ export const initialHoardings = [
     fineAmount: 15000,
     noticeStatus: 'Issued - 24hr Demolition Notice',
     enforcementSquad: 'SMKC Sangli Squad 01',
-    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+    imageUrl: '/assets/birthday.jpg',
     bbox: { x: 18, y: 15, width: 62, height: 55 }
   },
   {
@@ -230,7 +230,7 @@ export const scannerPresets = [
     location: 'Ganpati Mandir Main Chowk, Sangli',
     lat: 16.8530,
     lng: 74.5820,
-    image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=900&auto=format&fit=crop&q=80',
+    image: '/assets/birthday.jpg',
     stages: {
       mobileMapping: {
         sensor: 'Ladybug 360° Spherical Camera + Velodyne VLP-16 LiDAR',
@@ -454,7 +454,7 @@ export const initialScannedSubmissions = [
     ward: 'Prabhag 03 - Vishrambag',
     location: 'Vishrambag Main Road near Ganpati Temple',
     notes: 'Large political birthday flex hanging on street light pole, blocking traffic view.',
-    imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+    imageUrl: '/assets/birthday.jpg',
     scanDate: '2026-10-05T14:22:00.000Z',
     status: 'In Progress', // 'Received', 'Site Inspection Assigned', 'In Progress', 'Notice Issued', 'Resolved & Cleared'
     workProgress: 65,

@@ -20,10 +20,13 @@ import {
   Eye, 
   ChevronRight,
   Sliders,
-  ExternalLink
+  ExternalLink,
+  X
 } from 'lucide-react';
 
 export default function OfficerPortal({ 
+  isOpen = true,
+  onClose,
   scannedSubmissions = [], 
   onUpdateScanProgress, 
   setSelectedHoardingForNotice, 
@@ -31,6 +34,8 @@ export default function OfficerPortal({
   t, 
   lang 
 }) {
+  if (!isOpen) return null;
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [officerProfile, setOfficerProfile] = useState(null);
   const [officerId, setOfficerId] = useState('');
@@ -83,17 +88,39 @@ export default function OfficerPortal({
 
   const handleManualLogin = (e) => {
     e.preventDefault();
-    if (!officerId.trim() || !officerPassword.trim()) {
-      setLoginError('Please enter both Officer ID and Password.');
+    const id = officerId.trim().toLowerCase();
+    const pass = officerPassword.trim();
+
+    if (!id || !pass) {
+      setLoginError(lang === 'mr' ? 'कृपया Admin ID व Password दोन्ही प्रविष्ट करा.' : 'Please enter both Officer ID and Password.');
       return;
     }
-    const match = sampleOfficers.find(o => o.id.toLowerCase() === officerId.trim().toLowerCase());
-    if (match) {
+
+    if (
+      (id === 'admin@smkc.gov.in' && (pass === 'SMKC@2026' || pass === 'admin')) ||
+      (pass === 'SMKC@2026')
+    ) {
+      setOfficerProfile({
+        id: officerId.trim(),
+        name: 'Dr. S. K. Mahajan, IAS',
+        role: 'Deputy Commissioner (Enforcement & Sky Signs)',
+        jurisdiction: 'SMKC Central Headquarters - Sangli'
+      });
+      setIsLoggedIn(true);
+      setLoginError('');
+      return;
+    }
+
+    const match = sampleOfficers.find(o => o.id.toLowerCase() === id);
+    if (match && (pass === match.password || pass === 'SMKC@2026' || pass === 'admin')) {
       setOfficerProfile(match);
       setIsLoggedIn(true);
       setLoginError('');
-    } else {
-      // General login fallback
+      return;
+    }
+
+    // Fallback if password is admin
+    if (pass === 'admin') {
       setOfficerProfile({
         id: officerId.trim(),
         name: officerId.trim(),
@@ -102,7 +129,14 @@ export default function OfficerPortal({
       });
       setIsLoggedIn(true);
       setLoginError('');
+      return;
     }
+
+    setLoginError(
+      lang === 'mr'
+        ? 'अवैध ओळखपत्र किंवा पासवर्ड! अधिकृत Admin ID: admin@smkc.gov.in व Password: SMKC@2026 वापरा.'
+        : 'Invalid credentials! Use Admin ID: admin@smkc.gov.in and Password: SMKC@2026'
+    );
   };
 
   const handleLogout = () => {
@@ -143,67 +177,90 @@ export default function OfficerPortal({
     setTrackedResult(match || 'NOT_FOUND');
   };
 
-  return (
-    <section 
-      id="officer-portal-section" 
-      className="mt-12 bg-slate-900/95 border-t-2 border-amber-500/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-slate-100"
-    >
+  const portalContent = (
+    <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-slate-100 max-h-[92vh] overflow-y-auto w-full">
       {/* Decorative municipal ribbon background accent */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold mb-2">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>{lang === 'mr' ? 'अधिकृत मनपा अधिकारी कक्ष' : 'Official Municipal Officer Portal'}</span>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold mb-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span>{lang === 'mr' ? 'अधिकृत मनपा अधिकारी कक्ष' : 'Official Municipal Officer Portal'}</span>
+              <span className="bg-[#c62828] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded ml-1">
+                ADMIN ONLY
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {t.officerPortalTitle}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl mt-1">
+              {t.officerPortalSubtitle}
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            {t.officerPortalTitle}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-3xl mt-1">
-            {t.officerPortalSubtitle}
-          </p>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition-all flex-shrink-0"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Public Citizen Grievance Tracker Search Bar */}
-        <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 max-w-md w-full">
-          <form onSubmit={handleTrackLookup} className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-amber-400 flex-shrink-0 ml-1" />
-            <input 
-              type="text" 
-              value={trackToken}
-              onChange={(e) => setTrackToken(e.target.value)}
-              placeholder="Track token (e.g. SMKC-SCAN-2026-7841)..." 
-              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1 min-w-0"
-            />
-            <button
-              type="submit"
-              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] whitespace-nowrap transition-colors"
-            >
-              {lang === 'mr' ? 'ट्रॅक करा' : 'Track'}
-            </button>
-          </form>
+        {/* Right Header: Public Tracker & Close Button */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800 max-w-md w-full">
+            <form onSubmit={handleTrackLookup} className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-amber-400 flex-shrink-0 ml-1" />
+              <input 
+                type="text" 
+                value={trackToken}
+                onChange={(e) => setTrackToken(e.target.value)}
+                placeholder="Track token (e.g. SMKC-SCAN-2026-7841)..." 
+                className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none flex-1 min-w-0"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] whitespace-nowrap transition-colors"
+              >
+                {lang === 'mr' ? 'ट्रॅक करा' : 'Track'}
+              </button>
+            </form>
 
-          {/* Tracked Result Callout */}
-          {trackedResult && (
-            <div className="mt-2.5 pt-2 border-t border-slate-800 text-[11px] animate-fadeIn">
-              {trackedResult === 'NOT_FOUND' ? (
-                <span className="text-rose-400">Token not found in database. Please check reference ID.</span>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-amber-300 font-mono">{trackedResult.id}</span>
-                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold text-[10px]">
-                      {trackedResult.status} ({trackedResult.workProgress || 20}%)
-                    </span>
+            {/* Tracked Result Callout */}
+            {trackedResult && (
+              <div className="mt-2.5 pt-2 border-t border-slate-800 text-[11px] animate-fadeIn">
+                {trackedResult === 'NOT_FOUND' ? (
+                  <span className="text-rose-400">Token not found in database. Please check reference ID.</span>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-300 font-mono">{trackedResult.id}</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold text-[10px]">
+                        {trackedResult.status} ({trackedResult.workProgress || 20}%)
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[10px] line-clamp-2">
+                      <strong>Progress:</strong> {trackedResult.progressRemarks}
+                    </p>
                   </div>
-                  <p className="text-slate-300 text-[10px] line-clamp-2">
-                    <strong>Progress:</strong> {trackedResult.progressRemarks}
-                  </p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="hidden md:flex w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-white items-center justify-center transition-all flex-shrink-0 border border-slate-700"
+              title="Close Admin Portal"
+            >
+              <X className="w-5 h-5" />
+            </button>
           )}
         </div>
       </div>
@@ -225,6 +282,24 @@ export default function OfficerPortal({
                 <span className="text-[11px] text-slate-400">
                   {lang === 'mr' ? 'नागरिकांच्या स्कॅनवर कारवाई करण्यासाठी लॉगिन करा' : 'Sign in to inspect scans and update work progress'}
                 </span>
+              </div>
+            </div>
+
+            {/* Prominent Official Credentials Box */}
+            <div className="bg-amber-400/10 border border-amber-400/30 rounded-2xl p-3.5 text-xs text-amber-300 space-y-2">
+              <div className="font-bold flex items-center gap-2">
+                <span>🔑</span>
+                <span>{lang === 'mr' ? 'अधिकृत लॉगिन तपशील (Official Credentials):' : 'Official Officer Credentials:'}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Admin ID:</span>
+                  <strong className="text-white">admin@smkc.gov.in</strong>
+                </div>
+                <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                  <span className="text-slate-400 block text-[10px]">Password:</span>
+                  <strong className="text-white">SMKC@2026</strong>
+                </div>
               </div>
             </div>
 
@@ -647,6 +722,22 @@ export default function OfficerPortal({
         </div>
       )}
 
+    </div>
+  );
+
+  if (onClose) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto no-print">
+        <div className="max-w-5xl w-full my-auto animate-in fade-in zoom-in-95 duration-200">
+          {portalContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section id="officer-portal-section" className="mt-12">
+      {portalContent}
     </section>
   );
 }

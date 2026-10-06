@@ -44,16 +44,11 @@ export default function GisMap({ hoardings, setActiveTab, setSelectedHoardingFor
         attribution: '&copy; Google Maps &copy; Sangli Miraj Kupwad Municipal Corporation',
         maxZoom: 20,
       });
-    } else if (tileType === 'hybrid') {
+    } else {
       newLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         subdomains: ['0', '1', '2', '3'],
         attribution: '&copy; Google Satellite &copy; SMKC GIS',
         maxZoom: 20,
-      });
-    } else {
-      newLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
       });
     }
     newLayer.addTo(map);
@@ -210,16 +205,6 @@ export default function GisMap({ hoardings, setActiveTab, setSelectedHoardingFor
                 }`}
               >
                 🗺️ Street Map
-              </button>
-              <button
-                onClick={() => setMapTileType('osm')}
-                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-                  mapTileType === 'osm'
-                    ? 'bg-blue-600 text-white font-bold'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                🌍 OSM
               </button>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Scan, 
@@ -12,7 +12,8 @@ import {
   CheckCircle2, 
   Search, 
   Camera, 
-  Upload
+  Upload,
+  Clock
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -25,6 +26,41 @@ export default function Navbar({
   searchQuery,
   setSearchQuery
 }) {
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getFormattedDateTime = (d, l) => {
+    try {
+      const locale = l === 'mr' ? 'mr-IN' : l === 'hi' ? 'hi-IN' : 'en-IN';
+      const date = d.toLocaleDateString(locale, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      const time = d.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      return { date, time };
+    } catch (e) {
+      return {
+        date: d.toDateString(),
+        time: d.toLocaleTimeString()
+      };
+    }
+  };
+
+  const { date: formattedLiveDate, time: formattedLiveTime } = getFormattedDateTime(currentDateTime, lang);
+
   const navItems = [
     { id: 'dashboard', label: t.navDashboard, icon: Building2 },
     { id: 'scanner', label: t.navScanner, icon: Scan, badge: 'AI 2026' },
@@ -43,13 +79,36 @@ export default function Navbar({
 
   return (
     <header className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white shadow-xl">
-      {/* Top Civic Status Ribbon */}
+      {/* Top Civic Status Ribbon with Live Clock */}
       <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-xs px-4 py-1 flex items-center justify-between text-amber-50 font-medium">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-300 animate-ping" />
-          <span>{t.portalTag} • {t.appTitle}</span>
+        {/* Real-Time Live Clock (Top Left Corner - Translation Safe & Overflow Proof) */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div 
+            translate="no" 
+            className="notranslate flex items-center gap-1.5 bg-black/35 backdrop-blur-sm px-2.5 py-0.5 rounded-full border border-amber-300/40 font-mono text-[11px] text-white shadow-inner select-none whitespace-nowrap"
+          >
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-300 animate-pulse flex-shrink-0" title="Live Clock" />
+            <Clock className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />
+            <span className="font-semibold text-amber-100">{formattedLiveDate}</span>
+            <span className="text-amber-200/50">|</span>
+            <span className="font-bold text-amber-200 tracking-wider">{formattedLiveTime}</span>
+          </div>
+          <span className="hidden xl:inline text-[11px] text-amber-100/90 font-medium whitespace-nowrap">
+            {t.portalTag} • {t.appTitle}
+          </span>
         </div>
-        <div className="flex items-center gap-4 text-[11px]">
+        <div className="flex items-center gap-3 text-[11px]">
+          {/* Official Social Media & WhatsApp Shortcuts */}
+          <div className="hidden lg:flex items-center gap-2.5 pr-3 border-r border-amber-300/30">
+            <a href="https://x.com/SmkcMission?s=09" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-transform hover:scale-110 font-bold" title="SMKC Twitter / X">𝕏</a>
+            <a href="https://www.facebook.com/people/Smkc-Sangli/100011116629758/?mibextid=ZbWKwL" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-transform hover:scale-110 font-bold" title="SMKC Facebook">f</a>
+            <a href="https://www.instagram.com/smkc_mission_updates?igsh=dWFiNHFtYWE1M21x" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-transform hover:scale-110" title="SMKC Instagram">📸</a>
+            <a href="https://www.youtube.com/@smkcnewssangli6016" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-transform hover:scale-110 font-bold text-red-200" title="SMKC YouTube">▶</a>
+            <a href="https://api.whatsapp.com/send?phone=917066040357&text=Namaskar%20SMKC%20Helpline" target="_blank" rel="noopener noreferrer" className="hover:text-white font-bold flex items-center gap-1 text-emerald-100 bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-400/30 transition-transform hover:scale-105" title="मनपा व्हॉट्सॲप हेल्पलाईन (7066040357)">
+              <span>💬</span>
+              <span>7066040357</span>
+            </a>
+          </div>
           <span className="hidden sm:inline-flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded">
             <CheckCircle2 className="w-3 h-3 text-emerald-300" />
             {t.systemStatus}
