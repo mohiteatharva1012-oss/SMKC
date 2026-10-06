@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>सांगली, मिरज आणि कुपवाड शहर महानगरपालिका | SMKC Official Portal</title>
+  <meta name="description" content="सांगली, मिरज आणि कुपवाड शहर महानगरपालिका - अधिकृत नागरी सेवा व अनधिकृत फलक नियंत्रण कक्ष">
+  <link rel="icon" type="image/png" href="./smkc_logo.png">
+  <link rel="shortcut icon" type="image/png" href="./favicon.png">
+
+  <!-- Google Fonts: Noto Sans Devanagari & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Devanagari"', '"Plus Jakarta Sans"', 'sans-serif'],
+            devanagari: ['"Noto Sans Devanagari"', 'sans-serif'],
+          },
+          colors: {
+            smkcRed: '#c62828',
+            smkcRedDark: '#9b1c1c',
+            smkcGold: '#e0a017',
+            smkcIceBlue: '#d9eff7',
+            smkcFooter: '#222222',
+            smkcFooterDark: '#111111'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- React 18, ReactDOM 18 & Babel Standalone (Runs standalone on file:/// and localhost) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif;
+      background-color: #ffffff;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    /* Ticker animation */
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 36s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes pulseAlert {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
+    .animate-custom-pulse {
+      animation: pulseAlert 1.4s infinite;
+    }
+
+    /* Print styles for official notices */
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      .no-print, header, footer, .top-header, .navbar-container { display: none !important; }
+      .printable-notice {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+        color: #000 !important;
+      }
+    }
+
+    .leaflet-container {
+      width: 100% !important;
+      height: 100% !important;
+      font-family: inherit !important;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-800">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Trilingual Dictionaries
+    const i18n = {
+      mr: {
+        portalTag: 'सांगली, मिरज आणि कुपवाड शहर महानगरपालिका',
+        subHeading: 'SANGLI, MIRAJ & KUPWAD CITY MUNICIPAL CORPORATION',
+        dateText: 'Date Monday, 05.10.2026',
+        searchPlaceholder: 'Search...',
+        langSwitch: 'English Version',
+        navHome: 'मुखपृष्ठ',
+        navAbout: 'महानगरपालिके विषयी',
+        navServices: 'नागरी सुविधा',
+        navScanner: 'एआय स्मार्ट स्कॅनर',
+        navMap: 'जीआयएस नकाशा',
+        navCitizen: 'नागरी तक्रार',
+        navNotice: 'नोटीस व दंड',
+        navPayOnline: 'पे ऑनलाईन',
+        tickerBadge: 'महत्वाची घोषणा',
+        tickerText: 'सांगली, मिरज आणि कुपवाड शहर महानगरपालिका कार्यक्षेत्रात विनापरवाना व अनधिकृत राजकीय, व्यावसायिक फ्लेक्स/होर्डिंग्स लावणे हा फौजदारी गुन्हा आहे. मुंबई उच्च न्यायालय जनहित याचिका क्र. १५५/२०११ व महापालिका अधिनियम १९४९ कलम २४४ अन्वये संबंधितांवर तात्काळ २५,००० रुपये दंड व २४ तासांत फलक निष्कासित करण्यात येतील.',
+        mapHeading: 'सांगली, मिरज आणि कुपवाड शहर महानगरपालिका - अनधिकृत फलक व होर्डिंग जीआयएस नकाशा',
+        servicesHeading: 'लोकसेवा सेवा',
+        leadershipHeading: 'महानगरपालिकेचे नेतृत्व व प्रशासन',
+        linksHeading: 'महत्वाचे दुवे',
+        statsTotal: 'एकूण नोंदवलेले फलक',
+        statsIllegal: 'अनधिकृत फलक',
+        statsFines: 'आकारलेला दंड',
+        statsSquads: 'सक्रिय पथके'
+      },
+      hi: {
+        portalTag: 'सांगली, मिरज और कुपवाड नगर निगम',
+        subHeading: 'SANGLI, MIRAJ & KUPWAD CITY MUNICIPAL CORPORATION',
+        dateText: 'Date Monday, 05.10.2026',
+        searchPlaceholder: 'खोजें...',
+        langSwitch: 'English Version',
+        navHome: 'मुखपृष्ठ',
+        navAbout: 'नगर निगम परिचय',
+        navServices: 'नागरिक सुविधाएं',
+        navScanner: 'एआई स्मार्ट स्कैनर',
+        navMap: 'जीआईएस मानचित्र',
+        navCitizen: 'नागरिक शिकायत',
+        navNotice: 'नोटिस व जुर्माना',
+        navPayOnline: 'पे ऑनलाइन',
+        tickerBadge: 'महत्वपूर्ण घोषणा',
+        tickerText: 'सांगली, मिरज व कुपवाड नगर निगम क्षेत्र में अवैध होर्डिंग व बैनर लगाना कानूनी अपराध है। उच्च न्यायालय एवं धारा 244 के तहत ₹25,000 जुर्माना व 24 घंटे में जब्ती की जाएगी।',
+        mapHeading: 'सांगली, मिरज और कुपवाड नगर निगम - अवैध होर्डिंग एवं बैनर जीआईएस मानचित्र',
+        servicesHeading: 'नागरिक सेवाएं',
+        leadershipHeading: 'नगर निगम नेतृत्व एवं प्रशासन',
+        linksHeading: 'महत्वपूर्ण लिंक',
+        statsTotal: 'कुल दर्ज होर्डिंग',
+        statsIllegal: 'अवैध होर्डिंग',
+        statsFines: 'कुल जुर्माना',
+        statsSquads: 'सक्रिय दल'
+      },
+      en: {
+        portalTag: 'Sangli, Miraj & Kupwad City Municipal Corporation',
+        subHeading: 'SANGLI, MIRAJ & KUPWAD CITY MUNICIPAL CORPORATION',
+        dateText: 'Date Monday, 05.10.2026',
+        searchPlaceholder: 'Search...',
+        langSwitch: 'मराठी आवृत्ती',
+        navHome: 'Home',
+        navAbout: 'About SMKC',
+        navServices: 'Civic Services',
+        navScanner: 'AI Smart Scanner',
+        navMap: 'GIS Map',
+        navCitizen: 'Citizen Grievance',
+        navNotice: 'Notices & Fines',
+        navPayOnline: 'Pay Online',
+        tickerBadge: 'Important Notice',
+        tickerText: 'Installation of unauthorized political or commercial banners in SMKC jurisdiction is a punishable offense under MMC Act 1949 Sec 244 and Bombay High Court PIL 155/2011. Violators will face immediate removal and ₹25,000 penal recovery.',
+        mapHeading: 'Sangli, Miraj & Kupwad Municipal Corporation - Illegal Hoardings GIS Map',
+        servicesHeading: 'Civic Services',
+        leadershipHeading: 'Municipal Leadership & Administration',
+        linksHeading: 'Important Links',
+        statsTotal: 'Total Hoardings',
+        statsIllegal: 'Illegal Hoardings',
+        statsFines: 'Total Fines Imposed',
+        statsSquads: 'Active Enforcement Squads'
+      }
+    };
+
+    // Authentic Mock Data of Illegal & Authorized Hoardings across Sangli, Miraj & Kupwad
+    const initialHoardingsData = [
+      {
+        id: 'SMKC-HD-101',
+        title: { en: 'Political Birthday Flex on Traffic Island', mr: 'ट्रॅफिक आयलंडवरील अनधिकृत राजकीय वाढदिवस बॅनर', hi: 'चौराहे पर अवैध राजनीतिक जन्मदिन का बैनर' },
+        city: 'Sangli',
+        ward: 'Prabhag 03 - Vishrambag',
+        locationName: 'Vishrambag Chowk near Ganpati Mandir Road, Sangli',
+        lat: 16.8455,
+        lng: 74.6015,
+        status: 'illegal',
+        classification: 'Political Flex',
+        dimensions: '18 x 12 ft',
+        advertiser: 'Sangli Yuva Manch / Mahesh Patil',
+        contactNumber: '+91 98221 44550',
+        fineAmount: 15000,
+        ocrText: 'आमचे मार्गदर्शक व लाडके नेते मा. नामदार साहेब यांना वाढदिवसाच्या लाख लाख शुभेच्छा! संपर्क: ९८२२१ ४४५५०',
+        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+        violation: 'Erected on municipal traffic island without permission, completely obstructing driver sightlines. MMC Act Sec 244.'
+      },
+      {
+        id: 'SMKC-HD-102',
+        title: { en: 'Coaching Class Banner in Hospital Silence Zone', mr: 'रुग्णालय शांतता क्षेत्रातील विनापरवाना क्लासेस बॅनर', hi: 'अस्पताल साइलेंस जोन में अनधिकृत कोचिंग बैनर' },
+        city: 'Sangli',
+        ward: 'Prabhag 02 - Civil Hospital Road',
+        locationName: 'Government Civil Hospital Chowk, Sangli',
+        lat: 16.8505,
+        lng: 74.5880,
+        status: 'critical_hazard',
+        classification: 'Educational Flex',
+        dimensions: '14 x 8 ft',
+        advertiser: 'Apex Science & Medical Academy',
+        contactNumber: '+91 94238 99881',
+        fineAmount: 20000,
+        ocrText: 'APEX SCIENCE & MEDICAL ACADEMY NEET / JEE 2026 BATCH. Admissions Open. Call: 94238 99881',
+        imageUrl: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&auto=format&fit=crop&q=80',
+        violation: 'Placed within 100-meter prohibited Silence Zone of Sangli Civil Hospital. Direct violation of Bombay High Court PIL 155/2011.'
+      },
+      {
+        id: 'SMKC-HD-103',
+        title: { en: 'Miraj Station Road - Commercial Unipole Tax Default', mr: 'मिरज स्टेशन रोड - मुदत संपलेले व्यावसायिक युनिपोल', hi: 'मिरज स्टेशन रोड - एक्सपायर्ड व्यावसायिक यूनिपोल' },
+        city: 'Miraj',
+        ward: 'Prabhag 07 - Station Road Miraj',
+        locationName: 'Miraj Railway Station Main Road',
+        lat: 16.8272,
+        lng: 74.6469,
+        status: 'expired',
+        classification: 'Commercial Unipole',
+        dimensions: '20 x 10 ft',
+        advertiser: 'Ratna Jewellers Miraj',
+        contactNumber: '+91 94230 11223',
+        fineAmount: 8500,
+        ocrText: 'रत्न ज्वेलर्स मिरज - भव्य दसरा-दिवाळी सुवर्ण महोत्सव! मजुरीवर ५०% सूट. स्टेशन रोड, मिरज. परवाना क्र: SMKC-ADV-2024-MRJ-098',
+        imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80',
+        violation: 'License expired on 31-Mar-2025. Unpaid municipal sky sign advertisement tax under MMC Act Sec 245.'
+      },
+      {
+        id: 'SMKC-HD-104',
+        title: { en: 'Dangerous Banner Tied to 11kV Electric Distribution Pole', mr: 'हाय-व्होल्टेज वीज खांबाला बांधलेला धोकादायक बॅनर', hi: 'हाई-वोल्टेज बिजली के खंभे पर बंधा खतरनाक बैनर' },
+        city: 'Miraj',
+        ward: 'Prabhag 08 - Gandhi Chowk Miraj',
+        locationName: 'Gandhi Chowk near Bus Stand, Miraj',
+        lat: 16.8295,
+        lng: 74.6495,
+        status: 'critical_hazard',
+        classification: 'Event Banner',
+        dimensions: '16 x 6 ft',
+        advertiser: 'Miraj Utsav Samiti',
+        contactNumber: '+91 91580 33441',
+        fineAmount: 25000,
+        ocrText: 'भव्य निकाली कुस्ती व महादंगल! ऐतिहासिक मिरज मैदान. प्रथम बक्षीस रोख ₹१,००,०००. संपर्क: ९१५८० ३३४४१',
+        imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5293cb395?w=800&auto=format&fit=crop&q=80',
+        violation: 'Tied directly to MSEDCL 11kV electrical pole. Extreme electrocution and public fire hazard.'
+      },
+      {
+        id: 'SMKC-HD-105',
+        title: { en: 'Licensed Industrial Steel Unipole - Fully Compliant', mr: 'अधिकृत औद्योगिक युनिपोल - नियमांनुसार वैध', hi: 'अधिकृत औद्योगिक यूनिपोल - पूर्णतः वैध' },
+        city: 'Kupwad',
+        ward: 'Prabhag 11 - Kupwad MIDC',
+        locationName: 'Plot D-14, Kupwad Industrial Area Main Road, Sangli',
+        lat: 16.8778,
+        lng: 74.6111,
+        status: 'permitted',
+        classification: 'Commercial Unipole',
+        dimensions: '30 x 15 ft',
+        advertiser: 'Mahalaxmi Engineering & Steel Ltd',
+        contactNumber: '+91 233 2644200',
+        fineAmount: 0,
+        ocrText: 'MAHALAXMI HEAVY FABRICATION & STEEL - Kupwad MIDC. Authorized SMKC Permit: SMKC-ADV-2026-KPW-412. QR Code Verified.',
+        imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186f5f7?w=800&auto=format&fit=crop&q=80',
+        violation: 'None. Structural stability certified and advertising tax paid till 31-12-2026.'
+      },
+      {
+        id: 'SMKC-HD-106',
+        title: { en: 'Sangli-Miraj 100ft Road - Authorized Civic Awareness Gantry', mr: 'सांगली-मिरज १०० फूट रोड - अधिकृत जनजागृती गॅन्ट्री', hi: 'सांगली-मिरज 100 फीट रोड - अधिकृत जागरूकता गैन्ट्री' },
+        city: 'Sangli',
+        ward: 'Prabhag 05 - Sangli-Miraj Link Road',
+        locationName: 'Sangli-Miraj 100ft Road Junction',
+        lat: 16.8390,
+        lng: 74.6210,
+        status: 'permitted',
+        classification: 'Civic Awareness Gantry',
+        dimensions: '40 x 8 ft',
+        advertiser: 'SMKC Health Dept & Swachh Sangli Mission',
+        contactNumber: '0233-2373721',
+        fineAmount: 0,
+        ocrText: 'सांगली मिरज कुपवाड महानगरपालिका - स्वच्छ सर्वेक्षण २०२६! प्लास्टिक मुक्त शहर, सुंदर शहर. सहकार्य: भारती हॉस्पिटल',
+        imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80',
+        violation: 'None. Certified municipal public utility display.'
+      },
+      {
+        id: 'SMKC-HD-107',
+        title: { en: 'Rajwada Chowk - Political Banner Encroaching Pedestrian Footpath', mr: 'राजवाडा चौक - पादचारी पदपथावरील अनधिकृत राजकीय बॅनर', hi: 'राजवाड़ा चौक - फुटपाथ पर अनधिकृत राजनीतिक बैनर' },
+        city: 'Sangli',
+        ward: 'Prabhag 04 - Rajwada',
+        locationName: 'Rajwada Chowk near Maruti Temple, Sangli',
+        lat: 16.8520,
+        lng: 74.5770,
+        status: 'illegal',
+        classification: 'Political Flex',
+        dimensions: '15 x 10 ft',
+        advertiser: 'Yuva Sangram Manch',
+        contactNumber: '+91 98230 45678',
+        fineAmount: 15000,
+        ocrText: 'सर्व नागरिकांना जाहीर अभिष्टचिंतन! शुभेच्छुक: युवा संग्राम मंच. संपर्क: ९८२३० ४५६७८',
+        imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+        violation: 'Obstruction of pedestrian sidewalk forcing school children and pedestrians onto active roadway.'
+      },
+      {
+        id: 'SMKC-HD-108',
+        title: { en: 'Kupwad Railway Crossing - Unregistered Real Estate Flex', mr: 'कुपवाड रेल्वे क्रॉसिंग - विनापरवाना रिअल इस्टेट जाहिरात फलक', hi: 'कुपवाड रेलवे क्रॉसिंग - अनधिकृत रियल एस्टेट बोर्ड' },
+        city: 'Kupwad',
+        ward: 'Prabhag 10 - Kupwad Gaonthan',
+        locationName: 'Kupwad Railway Crossing Link Road',
+        lat: 16.8720,
+        lng: 74.6180,
+        status: 'illegal',
+        classification: 'Commercial Flex',
+        dimensions: '12 x 8 ft',
+        advertiser: 'Royal Builders & Developers',
+        contactNumber: '+91 97654 32109',
+        fineAmount: 12000,
+        ocrText: 'कुपवाड शहरात हक्काचे घर! १ व २ BHK फ्लॅट्स विक्रीस उपलब्ध. बुकिंग सुरु. संपर्क: ९७६५४ ३२१०९',
+        imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80',
+        violation: 'Unregistered commercial advertising flex. No municipal QR sticker or permit clearance.'
+      }
+    ];
+
+    function SMKCApp() {
+      const [lang, setLang] = useState('mr'); // Marathi default
+      const [activeTab, setActiveTab] = useState('home');
+      const [hoardings, setHoardings] = useState(initialHoardingsData);
+      const [selectedNoticeItem, setSelectedNoticeItem] = useState(initialHoardingsData[0]);
+      const [homeMapFilter, setHomeMapFilter] = useState('all'); // all | sangli | miraj | kupwad | illegal
+      const [searchQuery, setSearchQuery] = useState('');
+      const [mapTileType, setMapTileType] = useState('hybrid'); // Default to Satellite mode
+
+      // Dynamic API fetch from Express backend (/api/hoardings & /api/stats)
+      useEffect(() => {
+        const fetchBackendData = async () => {
+          try {
+            const res = await fetch('/api/hoardings');
+            if (res.ok) {
+              const data = await res.json();
+              if (Array.isArray(data) && data.length > 0) {
+                // Harmonize title structure if needed
+                const normalized = data.map(item => ({
+                  ...item,
+                  title: typeof item.title === 'string' 
+                    ? { en: item.title, mr: item.title, hi: item.title } 
+                    : (item.title || { en: 'Hoarding', mr: 'फलक', hi: 'होर्डिंग' }),
+                  violation: Array.isArray(item.violationReasons) ? item.violationReasons.join('. ') : (item.violation || '')
+                }));
+                setHoardings(normalized);
+                setSelectedNoticeItem(normalized[0]);
+              }
+            }
+          } catch (e) {
+            console.log('SMKC Backend API not responding, using default verified tri-city data');
+          }
+        };
+        fetchBackendData();
+      }, []);
+
+      // AI Smart Scanner Studio execution state
+      const [activeScannerStep, setActiveScannerStep] = useState(7);
+      const [scannerRunning, setScannerRunning] = useState(false);
+      const [scannerPreset, setScannerPreset] = useState(initialHoardingsData[0]);
+      const [customUploadUrl, setCustomUploadUrl] = useState(null);
+      const [scannerLogs, setScannerLogs] = useState([
+        '[STAGE 1] Mobile Mapping: GNSS RTK position fix (16.8455° N, 74.6015° E - Vishrambag Chowk Sangli)',
+        '[STAGE 2] CNN Detection: YOLOv8x identified billboard_flex with 97.4% confidence',
+        '[STAGE 3] 3D Localization: Projected LiDAR depth -> Dimensions 18 x 12 ft (Area: 216 sq.ft)',
+        '[STAGE 4] Classification: Unauthorized Political Congratulatory Flex on Traffic Island',
+        '[STAGE 5] Devanagari OCR: Extracted sponsor "Sangli Yuva Manch", Phone: "+91 98221 44550"',
+        '[STAGE 6] SMKC GIS Registry: NO PERMIT FOUND. Flagged under MMC Act 1949 Sec 244',
+        '[STAGE 7] Administrative Action: 24-hr Demolition Notice Issued. Fine: ₹15,000'
+      ]);
+
+      // Top Search Bar Scanner Modal States
+      const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
+      const [scannerModalStep, setScannerModalStep] = useState('capture'); // 'capture' | 'analyzing' | 'citizen_login' | 'success'
+      const [modalSelectedImage, setModalSelectedImage] = useState(null);
+      const [modalRuleIndex, setModalRuleIndex] = useState(0);
+      const [modalRuleResults, setModalRuleResults] = useState([]);
+      const [modalCitizenData, setModalCitizenData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        city: 'Sangli',
+        location: '',
+        notes: ''
+      });
+      const [modalFormError, setModalFormError] = useState('');
+      const [lastSubmittedToken, setLastSubmittedToken] = useState(null);
+
+      // Scanned Submissions Store for SMKC Officer Review & Tracking
+      const [scannedSubmissions, setScannedSubmissions] = useState(() => {
+        try {
+          const saved = localStorage.getItem('smkc_scans');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return [
+          {
+            id: 'SMKC-SCAN-2026-7841',
+            citizenName: 'Rahul Shinde (राहुल शिंदे)',
+            citizenPhone: '+91 98224 55120',
+            citizenEmail: 'rahul.shinde@gmail.com',
+            city: 'Sangli',
+            location: 'Vishrambag Main Chowk near Ganpati Mandir',
+            notes: 'Large political flex hanging on street light pole, blocking traffic view.',
+            imageUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+            scanDate: '०५ ऑक्टोबर २०२६',
+            status: 'In Progress (कारवाई चालू)',
+            workProgress: 65,
+            progressRemarks: 'पथक ०१ द्वारे प्रत्यक्ष पाहणी पूर्ण. २४ तासांची नोटीस बजावली असून फलक निष्कासन प्रक्रियेत आहे.',
+            assignedSquad: 'Sangli Enforcement Squad 01',
+            assignedOfficer: 'Dr. S. K. Mahajan (Ward Officer)',
+            calculatedFine: 15000,
+            overallVerdict: 'Illegal / High Hazard'
+          },
+          {
+            id: 'SMKC-SCAN-2026-7842',
+            citizenName: 'Priyanka Kadam (प्रियांका कदम)',
+            citizenPhone: '+91 94220 88714',
+            citizenEmail: '',
+            city: 'Miraj',
+            location: 'Gandhi Chowk near Bus Stand, Miraj',
+            notes: 'Commercial banner tied to high-voltage electric pole.',
+            imageUrl: 'https://images.unsplash.com/photo-1508873696983-2df5293cb395?w=800&auto=format&fit=crop&q=80',
+            scanDate: '०६ ऑक्टोबर २०२६',
+            status: 'Notice Issued (नोटीस जारी)',
+            workProgress: 40,
+            progressRemarks: 'महावितरण वीज मंडळासह संयुक्त पाहणी. कलम २४४ अन्वये नोटीस फलकावर चिकटवली.',
+            assignedSquad: 'Miraj Rapid Response Squad',
+            assignedOfficer: 'P. V. Patil (Enforcement Chief)',
+            calculatedFine: 25000,
+            overallVerdict: 'Critical Hazard'
+          }
+        ];
+      });
+
+      // Officer Portal States at Bottom of Website
+      const [officerLoggedIn, setOfficerLoggedIn] = useState(false);
+      const [officerProfile, setOfficerProfile] = useState(null);
+      const [officerIdInput, setOfficerIdInput] = useState('');
+      const [officerPassInput, setOfficerPassInput] = useState('');
+      const [officerLoginErr, setOfficerLoginErr] = useState('');
+      const [selectedOfficerScanId, setSelectedOfficerScanId] = useState('SMKC-SCAN-2026-7841');
+      const [officerStage, setOfficerStage] = useState('In Progress');
+      const [officerProgressPercent, setOfficerProgressPercent] = useState(65);
+      const [officerRemarks, setOfficerRemarks] = useState('');
+      const [officerSquad, setOfficerSquad] = useState('Sangli Enforcement Squad 01');
+      const [officerUpdateSuccess, setOfficerUpdateSuccess] = useState('');
+
+      // Public Token Tracker
+      const [trackSearchToken, setTrackSearchToken] = useState('');
+      const [trackSearchResult, setTrackSearchResult] = useState(null);
+
+      // Citizen grievances
+      const [complaints, setComplaints] = useState([
+        { id: 'CMP-2026-891', name: 'अमित देशमुख', city: 'सांगली', location: 'विश्रामबाग चौक', desc: 'वाहतूक बेटावर बेकायदेशीर राजकीय फ्लेक्स लावल्याने सिग्नल झाकले गेले आहे.', status: 'कारवाई सुरू', date: '०४ ऑक्टोबर २०२६' },
+        { id: 'CMP-2026-892', name: 'स्नेहल कुलकर्णी', city: 'मिरज', location: 'गांधी चौक', desc: 'वीज खांबावर मोठा बॅनर बांधल्याने विजेचा धोका निर्माण झाला आहे.', status: 'पथक रवाना', date: '०५ ऑक्टोबर २०२६' }
+      ]);
+      const [cForm, setCForm] = useState({ name: '', phone: '', city: 'सांगली', location: '', desc: '' });
+      const [complaintSuccessToken, setComplaintSuccessToken] = useState(null);
+
+      const t = i18n[lang] || i18n.mr;
+
+      // Leaflet Map Refs
+      const homeMapContainerRef = useRef(null);
+      const homeMapInstanceRef = useRef(null);
+      const homeTileLayerRef = useRef(null);
+      const homeMarkersLayerRef = useRef(null);
+
+      // Tri-City Centroid and Sub-city Coordinates
+      const cityCentroids = {
+        all: { center: [16.8524, 74.6050], zoom: 12.5 },
+        sangli: { center: [16.8524, 74.5815], zoom: 14 },
+        miraj: { center: [16.8272, 74.6469], zoom: 14 },
+        kupwad: { center: [16.8778, 74.6111], zoom: 14 }
+      };
+
+      const focusCity = (cityName) => {
+        if (!homeMapInstanceRef.current) return;
+        setHomeMapFilter(cityName);
+        const target = cityCentroids[cityName] || cityCentroids.all;
+        homeMapInstanceRef.current.flyTo(target.center, target.zoom, { duration: 1.2 });
+      };
+
+      // Handle Tile Layer Switching
+      const updateTileLayer = (map, tileType) => {
+        if (homeTileLayerRef.current) {
+          map.removeLayer(homeTileLayerRef.current);
+        }
+
+        let newLayer;
+        if (tileType === 'google') {
+          // Google Maps Official Roadmap Tiles (High detail, Marathi/English place names)
+          newLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            attribution: '&copy; Google Maps &copy; सांगली मिरज आणि कुपवाड शहर महानगरपालिका',
+            maxZoom: 20
+          });
+        } else if (tileType === 'hybrid') {
+          // Google Maps Satellite + Street Hybrid Tiles
+          newLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            subdomains: ['0', '1', '2', '3'],
+            attribution: '&copy; Google Satellite &copy; SMKC GIS',
+            maxZoom: 20
+          });
+        } else {
+          // OpenStreetMap Standard Free Tiles
+          newLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          });
+        }
+
+        newLayer.addTo(map);
+        homeTileLayerRef.current = newLayer;
+      };
+
+      // Initialize Home Map & Render Markers
+      useEffect(() => {
+        if (activeTab !== 'home' && activeTab !== 'map') {
+          if (homeMapInstanceRef.current) {
+            homeMapInstanceRef.current.remove();
+            homeMapInstanceRef.current = null;
+            homeTileLayerRef.current = null;
+            homeMarkersLayerRef.current = null;
+          }
+          return;
+        }
+
+        const timer = setTimeout(() => {
+          if (!homeMapContainerRef.current) return;
+
+          // If container changed (e.g. between home and map tab)
+          if (homeMapInstanceRef.current) {
+            try {
+              if (homeMapInstanceRef.current.getContainer() !== homeMapContainerRef.current) {
+                homeMapInstanceRef.current.remove();
+                homeMapInstanceRef.current = null;
+                homeTileLayerRef.current = null;
+                homeMarkersLayerRef.current = null;
+              }
+            } catch (e) {
+              homeMapInstanceRef.current = null;
+            }
+          }
+
+          // If container changed or not yet initialized
+          if (!homeMapInstanceRef.current) {
+            const map = L.map(homeMapContainerRef.current, {
+              center: [16.8524, 74.6050],
+              zoom: 12.5,
+              zoomControl: true,
+              scrollWheelZoom: true
+            });
+
+            updateTileLayer(map, mapTileType);
+            homeMarkersLayerRef.current = L.layerGroup().addTo(map);
+            homeMapInstanceRef.current = map;
+
+            // Invalidate size once DOM settles
+            setTimeout(() => {
+              if (homeMapInstanceRef.current) homeMapInstanceRef.current.invalidateSize();
+            }, 300);
+          } else {
+            // Update tile layer if changed
+            updateTileLayer(homeMapInstanceRef.current, mapTileType);
+          }
+
+          if (homeMapInstanceRef.current && homeMarkersLayerRef.current) {
+            homeMarkersLayerRef.current.clearLayers();
+            const bounds = [];
+
+            // 1. Prominent Tri-City Municipal Zone Labels
+            const cityHubs = [
+              { name: 'सांगली (Sangli)', sub: 'मनपा मुख्यालय / गणपती पेठ / विश्रामबाग', lat: 16.8544, lng: 74.5815, color: '#c62828' },
+              { name: 'मिरज (Miraj)', sub: 'रेल्वे जंक्शन / गांधी चौक / मिशन', lat: 16.8272, lng: 74.6469, color: '#0284c7' },
+              { name: 'कुपवाड (Kupwad)', sub: 'एमआयडीसी औद्योगिक वसाहत', lat: 16.8778, lng: 74.6111, color: '#16a34a' }
+            ];
+
+            cityHubs.forEach(hub => {
+              const hubIcon = L.divIcon({
+                className: 'custom-hub-badge',
+                html: `
+                  <div style="background: white; border: 2px solid ${hub.color}; border-radius: 9999px; padding: 4px 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); white-space: nowrap; font-size: 11px; font-weight: bold; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; background: ${hub.color}; display: inline-block;"></span>
+                    <span>${hub.name}</span>
+                  </div>
+                `,
+                iconSize: [110, 28],
+                iconAnchor: [55, 14]
+              });
+              const hubMarker = L.marker([hub.lat, hub.lng], { icon: hubIcon });
+              hubMarker.bindPopup(`<strong>${hub.name}</strong><br/><span style="color:#64748b; font-size:11px;">${hub.sub}</span>`);
+              homeMarkersLayerRef.current.addLayer(hubMarker);
+              bounds.push([hub.lat, hub.lng]);
+            });
+
+            // 2. Plot Hoardings Markers
+            hoardings.forEach(item => {
+              if (!item.lat || !item.lng) return;
+
+              // Filter logic
+              if (homeMapFilter === 'sangli' && item.city !== 'Sangli') return;
+              if (homeMapFilter === 'miraj' && item.city !== 'Miraj') return;
+              if (homeMapFilter === 'kupwad' && item.city !== 'Kupwad') return;
+              if (homeMapFilter === 'illegal' && item.status !== 'illegal' && item.status !== 'critical_hazard') return;
+
+              const latLng = [item.lat, item.lng];
+              bounds.push(latLng);
+
+              let pinColor = '#c62828'; // Red for illegal
+              let iconLabel = '!';
+              if (item.status === 'permitted') { pinColor = '#16a34a'; iconLabel = '✓'; }
+              else if (item.status === 'expired') { pinColor = '#d97706'; iconLabel = '⏳'; }
+              else if (item.status === 'critical_hazard') { pinColor = '#dc2626'; iconLabel = '⚠️'; }
+
+              const customIcon = L.divIcon({
+                className: 'custom-hoarding-pin',
+                html: `
+                  <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    ${item.status === 'critical_hazard' ? '<span style="position: absolute; width: 100%; height: 100%; border-radius: 9999px; background: #dc2626; opacity: 0.65;" class="animate-custom-pulse"></span>' : ''}
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: ${pinColor}; border: 2.5px solid white; box-shadow: 0 4px 8px -1px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
+                      ${iconLabel}
+                    </div>
+                  </div>
+                `,
+                iconSize: [34, 34],
+                iconAnchor: [17, 17],
+                popupAnchor: [0, -17],
+              });
+
+              const itemTitle = (item.title && (item.title[lang] || item.title.mr || item.title.en)) || 'होर्डिंग फलक';
+              const marker = L.marker(latLng, { icon: customIcon });
+              marker.bindPopup(`
+                <div style="font-family: inherit; font-size: 12px; min-width: 250px; line-height: 1.4;">
+                  <strong style="color: #c62828; font-size: 13px; display: block; margin-bottom: 2px;">${item.locationName}</strong>
+                  <div style="color: #475569; font-size: 11px; margin-bottom: 4px;">${itemTitle} (${item.ward || item.city})</div>
+                  ${item.imageUrl ? `<img src="${item.imageUrl}" style="width:100%; height:90px; object-fit:cover; border-radius:6px; margin-bottom:6px; border:1px solid #e2e8f0;" alt="Hoarding preview" />` : ''}
+                  ${item.ocrText ? `
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 6px; border-radius: 4px; font-size: 10px; margin-bottom: 4px;">
+                      <strong>मजकूर:</strong> "${item.ocrText.slice(0, 50)}..."
+                    </div>
+                  ` : ''}
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 4px;">
+                    <span style="font-weight: bold; text-transform: uppercase; color: ${pinColor}; font-size: 10px;">${item.status}</span>
+                    <span style="font-weight: bold; color: #b45309;">दंड: ₹${(item.fineAmount || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              `);
+              homeMarkersLayerRef.current.addLayer(marker);
+            });
+
+            if (bounds.length > 0 && homeMapFilter === 'all') {
+              homeMapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 14.5 });
+            }
+          }
+        }, 120);
+
+        return () => {
+          clearTimeout(timer);
+        };
+      }, [activeTab, homeMapFilter, mapTileType, lang, hoardings]);
+
+      const runAIAnalysis = (target) => {
+        setScannerPreset(target);
+        setCustomUploadUrl(null);
+        setActiveScannerStep(1);
+        setScannerRunning(true);
+        setScannerLogs([
+          `[STAGE 1] Mobile Mapping: GNSS RTK acquired (${target.lat}°N, ${target.lng}°E - ${target.locationName})`,
+        ]);
+
+        let step = 1;
+        const interval = setInterval(() => {
+          step++;
+          setActiveScannerStep(step);
+          if (step === 2) setScannerLogs(p => [...p, `[STAGE 2] CNN Detection: YOLOv8x identified billboard with 97.4% confidence`]);
+          if (step === 3) setScannerLogs(p => [...p, `[STAGE 3] 3D Localization: Dimensions ${target.dimensions}`]);
+          if (step === 4) setScannerLogs(p => [...p, `[STAGE 4] Classification: ${target.classification} (${target.status.toUpperCase()})`]);
+          if (step === 5) setScannerLogs(p => [...p, `[STAGE 5] Devanagari OCR: Extracted sponsor "${target.advertiser}", Phone: "${target.contactNumber}"`]);
+          if (step === 6) setScannerLogs(p => [...p, `[STAGE 6] SMKC GIS Registry: ${target.status === 'permitted' ? 'MATCHED & VALID' : 'VIOLATION - MMC Act Sec 244'}`]);
+          if (step === 7) {
+            setScannerLogs(p => [...p, `[STAGE 7] Administrative Action: Issued 24-hr Demolition Notice. Fine: ₹${target.fineAmount.toLocaleString('en-IN')}`]);
+            setScannerRunning(false);
+            clearInterval(interval);
+          }
+        }, 280);
+      };
+
+      // 7-Rule SMKC Automated Evaluation for Scanned Photo
+      const startModalSevenRuleAnalysis = (imageSrc, defaultLoc = 'सांगली - विश्रामबाग मुख्य रस्ता') => {
+        setModalSelectedImage(imageSrc);
+        setScannerModalStep('analyzing');
+        setModalRuleIndex(0);
+
+        const rules = [
+          { ruleNum: 1, title: '१. महापालिका हद्द व स्थान वैधता', passed: true, detail: 'स्थान तपासणी: सांगली मिरज कुपवाड मनपा प्रभाग हद्दीत समाविष्ट आहे (GPS अचूकता ±०.०३ मी).' },
+          { ruleNum: 2, title: '२. आकाशचिन्ह परवाना वैधता (कलम २४४)', passed: false, detail: 'मनपाच्या जाहिरात परवाना नोंदवहीत कोणतीही पूर्वपरवानगी आढळली नाही (विनापरवाना).' },
+          { ruleNum: 3, title: '३. वाहतूक व पादचारी सुरक्षितता (Setback)', passed: false, detail: 'जमिनीपासून उंची केवळ २.४ मीटर (<३.५ मी. आवश्यक). रस्ता वळणावर वाहनचालकांची दृश्यमानता अडवणारा फलक.' },
+          { ruleNum: 4, title: '४. शांतता व संवेदनशील क्षेत्र तपासणी', passed: true, detail: 'रुग्णालय/शाळा शांतता क्षेत्राच्या १०० मी. परिघाबाहेर, परंतु पादचारी पदपथावर अडथळा.' },
+          { ruleNum: 5, title: '५. संरचनात्मक व वारा-भार सुरक्षितता', passed: false, detail: 'बांबू व सैल लोखंडी तारांचा कच्चा सांगाडा. जोरदार वाऱ्यामुळे खाली कोसळून अपघाताचा धोका.' },
+          { ruleNum: 6, title: '६. विद्रूपीकरण कायदा व मजकूर तपासणी', passed: false, detail: 'संपत्ती विद्रूपीकरण कायदा १९९५ व मुंबई उच्च न्यायालय पीआयएल १५५/२०११ चे उल्लंघन.' },
+          { ruleNum: 7, title: '७. जाहिरात कर व मनपा क्यूआर कोड', passed: false, detail: 'मनपा सुरक्षा होलोग्राम क्यूआर कोड गहाळ. जाहिरात शुल्क थकबाकी. २४ तासांची निष्कासन नोटीस लागू.' }
+        ];
+
+        setModalRuleResults(rules);
+
+        let cur = 0;
+        const timer = setInterval(() => {
+          cur++;
+          setModalRuleIndex(cur);
+          if (cur >= 7) {
+            clearInterval(timer);
+            setTimeout(() => {
+              setScannerModalStep('citizen_login');
+            }, 700);
+          }
+        }, 400);
+      };
+
+      // Citizen Submission Handler (Name & Number Required, Email Optional)
+      const handleModalCitizenSubmit = (e) => {
+        e.preventDefault();
+        if (!modalCitizenData.name.trim()) {
+          setModalFormError('कृपया आपले नाव प्रविष्ट करा (Please enter your name).');
+          return;
+        }
+        const cleanPhone = modalCitizenData.phone.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+          setModalFormError('कृपया वैध १०-अंकी मोबाईल नंबर प्रविष्ट करा (Please enter 10-digit mobile number).');
+          return;
+        }
+
+        setModalFormError('');
+        const token = `SMKC-SCAN-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const newSubmission = {
+          id: token,
+          citizenName: modalCitizenData.name.trim(),
+          citizenPhone: modalCitizenData.phone.trim(),
+          citizenEmail: modalCitizenData.email.trim() || '',
+          city: modalCitizenData.city || 'Sangli',
+          location: modalCitizenData.location || `${modalCitizenData.city} मुख्य रस्ता / चौक`,
+          notes: modalCitizenData.notes || 'नागरिकाने मोबाइलवरून स्कॅन केलेला फलक',
+          imageUrl: modalSelectedImage || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800',
+          scanDate: '०६ ऑक्टोबर २०२६',
+          status: 'Received (नोंदणीकृत)',
+          workProgress: 15,
+          progressRemarks: 'नागरिकाचा स्कॅन मनपा नियंत्रण कक्ष डेटाबेसमध्ये नोंदवला गेला. प्रभाग अधिकाऱ्यांकडे तपासणीसाठी वर्ग केला आहे.',
+          assignedSquad: 'Sangli Enforcement Squad 01',
+          assignedOfficer: 'Dr. S. K. Mahajan (Ward Officer)',
+          ruleAnalysis: modalRuleResults,
+          calculatedFine: 16000,
+          overallVerdict: 'Illegal / High Hazard (५ नियम उल्लंघन)'
+        };
+
+        const updated = [newSubmission, ...scannedSubmissions];
+        setScannedSubmissions(updated);
+        try {
+          localStorage.setItem('smkc_scans', JSON.stringify(updated));
+          fetch('/api/scans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSubmission)
+          }).catch(err => console.log('Backend sync offline, saved to local database'));
+        } catch (e) {}
+
+        setLastSubmittedToken(token);
+        setScannerModalStep('success');
+      };
+
+      // Officer Progress Update Handler
+      const handleOfficerProgressUpdate = (e) => {
+        e.preventDefault();
+        const updated = scannedSubmissions.map(s => {
+          if (s.id === selectedOfficerScanId) {
+            return {
+              ...s,
+              status: officerStage,
+              workProgress: Number(officerProgressPercent),
+              progressRemarks: officerRemarks || s.progressRemarks,
+              assignedSquad: officerSquad,
+              assignedOfficer: officerProfile?.name || 'SMKC Officer'
+            };
+          }
+          return s;
+        });
+
+        setScannedSubmissions(updated);
+        try {
+          localStorage.setItem('smkc_scans', JSON.stringify(updated));
+          fetch(`/api/scans/${selectedOfficerScanId}/progress`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: officerStage,
+              workProgress: Number(officerProgressPercent),
+              progressRemarks: officerRemarks,
+              assignedSquad: officerSquad
+            })
+          }).catch(err => console.log('Offline patch'));
+        } catch (e) {}
+
+        setOfficerUpdateSuccess('कामाची प्रगती यशस्वीरित्या मनपा डेटाबेसमध्ये अद्ययावत केली गेली!');
+        setTimeout(() => setOfficerUpdateSuccess(''), 4000);
+      };
+
+      // Public Token Tracker Lookup
+      const handlePublicTrack = (e) => {
+        e.preventDefault();
+        if (!trackSearchToken.trim()) return;
+        const found = scannedSubmissions.find(s => s.id.toLowerCase() === trackSearchToken.trim().toLowerCase());
+        setTrackSearchResult(found || 'NOT_FOUND');
+      };
+
+      const handleComplaint = (e) => {
+        e.preventDefault();
+        const token = `SMKC-CMP-${Math.floor(1000 + Math.random() * 9000)}`;
+        setComplaints(prev => [{
+          id: token,
+          name: cForm.name,
+          city: cForm.city,
+          location: cForm.location,
+          desc: cForm.desc,
+          status: 'नोंदणीकृत - पथक नियुक्त',
+          date: 'आज'
+        }, ...prev]);
+        setComplaintSuccessToken(token);
+        setCForm({ name: '', phone: '', city: 'सांगली', location: '', desc: '' });
+      };
+
+      const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-white text-slate-800">
+          
+          {/* 1. TOP UTILITY BAR (Official Light Ice Blue #d9eff7 matching smkc.gov.in) */}
+          <div className="bg-[#d9eff7] border-b border-sky-200 px-4 sm:px-8 py-1.5 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-800">{t.dateText}</span>
+            </div>
+
+            {/* Centered Search Bar with Mic, Search icon, and prominent SCANNER OPTION */}
+            <div className="flex-1 max-w-lg mx-auto hidden md:flex items-center bg-white border-2 border-slate-300 hover:border-[#c62828] focus-within:border-[#c62828] rounded-full px-3 py-1 shadow-sm gap-2 transition-all">
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full text-xs outline-none bg-transparent text-slate-700 pl-2"
+              />
+              <span className="text-slate-400 text-sm cursor-pointer" title="Voice Search">🎙️</span>
+              <span className="text-red-700 font-bold text-sm cursor-pointer" title="Search">🔍</span>
+              
+              {/* SCANNER OPTION BUTTON (MOBILE CAMERA OR PC UPLOAD) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerModalStep('capture');
+                  setIsScannerModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 bg-[#c62828] hover:bg-[#b71c1c] text-white px-3 py-1 rounded-full text-xs font-bold transition-all shadow hover:scale-105 active:scale-95 whitespace-nowrap"
+                title="कॅमेऱ्याने बॅनरचा फोटो स्कॅन करा किंवा फाईल अपलोड करा (Scan banner from mobile camera or upload from desktop)"
+              >
+                <span>📷</span>
+                <span>{lang === 'mr' ? 'फोटो स्कॅन (Scan)' : lang === 'hi' ? 'फोटो स्कैन' : 'Scan Photo'}</span>
+              </button>
+            </div>
+
+            {/* Mobile Scanner Shortcut Button */}
+            <button
+              onClick={() => {
+                setScannerModalStep('capture');
+                setIsScannerModalOpen(true);
+              }}
+              className="md:hidden flex items-center gap-1 bg-[#c62828] text-white px-2.5 py-1 rounded-full text-xs font-bold shadow"
+            >
+              <span>📷</span>
+              <span>{lang === 'mr' ? 'फोटो स्कॅन' : 'Scan'}</span>
+            </button>
+
+            {/* Accessibility & Language Toggle */}
+            <div className="flex items-center gap-2.5">
+              <div className="hidden lg:flex items-center gap-1 font-mono text-[11px] text-slate-700 border-r border-slate-300 pr-2.5">
+                <span className="hover:text-red-700 cursor-pointer">A--</span>
+                <span>|</span>
+                <span className="hover:text-red-700 cursor-pointer">A-</span>
+                <span>|</span>
+                <span className="font-bold hover:text-red-700 cursor-pointer">A</span>
+                <span>|</span>
+                <span className="hover:text-red-700 cursor-pointer">A+</span>
+                <span>|</span>
+                <span className="hover:text-red-700 cursor-pointer">A++</span>
+                <span>|</span>
+                <span className="bg-[#e0a017] text-black px-1.5 py-0.2 rounded font-bold">A</span>
+                <span>|</span>
+                <span className="bg-black text-white px-1.5 py-0.2 rounded font-bold">A</span>
+              </div>
+
+              {/* Language Switcher Buttons */}
+              <div className="flex items-center bg-white border border-slate-300 rounded shadow-sm text-xs font-semibold overflow-hidden">
+                <button
+                  onClick={() => setLang('mr')}
+                  className={`px-2.5 py-0.5 transition-colors ${lang === 'mr' ? 'bg-[#c62828] text-white font-bold' : 'text-slate-700 hover:text-red-700'}`}
+                >
+                  मराठी
+                </button>
+                <button
+                  onClick={() => setLang('hi')}
+                  className={`px-2.5 py-0.5 transition-colors ${lang === 'hi' ? 'bg-[#c62828] text-white font-bold' : 'text-slate-700 hover:text-red-700'}`}
+                >
+                  हिंदी
+                </button>
+                <button
+                  onClick={() => setLang('en')}
+                  className={`px-2.5 py-0.5 transition-colors ${lang === 'en' ? 'bg-[#c62828] text-white font-bold' : 'text-slate-700 hover:text-red-700'}`}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. MAIN HEADER (Spacious White with Official Red Emblem & Large Red Title) */}
+          <header className="bg-white py-4 sm:py-6 px-4 sm:px-8 border-b border-slate-100">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              
+              <div onClick={() => setActiveTab('home')} className="flex items-center gap-4 sm:gap-6 cursor-pointer select-none">
+                <img
+                  src="./smkc_logo.png"
+                  alt="SMKC Official Emblem"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow transition-transform hover:scale-105"
+                />
+                <div>
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#c62828] tracking-tight leading-tight">
+                    सांगली मिरज आणि कुपवाड शहर महानगरपालिका
+                  </h1>
+                  <h2 className="text-xs sm:text-sm font-bold text-slate-700 tracking-wider mt-1">
+                    SANGLI, MIRAJ & KUPWAD CITY MUNICIPAL CORPORATION
+                  </h2>
+                </div>
+              </div>
+
+              {/* Citizen Helpline Contact */}
+              <div className="hidden lg:flex flex-col items-end text-right border-l pl-6 border-slate-200">
+                <span className="text-xs font-semibold text-slate-500">अनधिकृत फलक नियंत्रण कक्ष</span>
+                <span className="text-lg font-black text-[#c62828] font-mono">०२३३-२३७३७२१</span>
+                <span className="text-[11px] text-slate-500">टोल फ्री: १८००-२३३-१२३४</span>
+              </div>
+
+            </div>
+          </header>
+
+          {/* 3. NAVIGATION BAR (Clean White / Off-white with Red Active Tab Block) */}
+          <nav className="sticky top-0 z-40 bg-white border-y border-slate-200 shadow-sm px-4 sm:px-8">
+            <div className="max-w-7xl mx-auto flex items-center overflow-x-auto gap-0 text-xs sm:text-sm font-bold text-slate-700 scrollbar-none">
+              {[
+                { id: 'home', label: t.navHome },
+                { id: 'about', label: t.navAbout },
+                { id: 'services', label: t.navServices },
+                { id: 'scanner', label: t.navScanner, badge: 'AI 2026' },
+                { id: 'map', label: t.navMap, badge: 'GIS' },
+                { id: 'citizen', label: t.navCitizen },
+                { id: 'notice', label: t.navNotice },
+                { id: 'payonline', label: t.navPayOnline },
+              ].map(item => {
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`flex items-center gap-1.5 px-4 py-3 whitespace-nowrap transition-colors border-r border-slate-100 ${
+                      active
+                        ? 'bg-[#c62828] text-white font-black shadow-inner'
+                        : 'hover:bg-red-50 hover:text-[#c62828]'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span className={`text-[9px] px-1 py-0.1 rounded font-bold uppercase ${
+                        active ? 'bg-amber-400 text-slate-900' : 'bg-[#c62828] text-white'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* 4. GOLDEN ANNOUNCEMENT TICKER (Exact replica of smkc.gov.in) */}
+          <div className="bg-[#e0a017] text-slate-950 px-4 py-2 flex items-center gap-3 overflow-hidden shadow-sm">
+            <span className="bg-white text-slate-900 font-bold text-xs px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+              {t.tickerBadge}
+            </span>
+            <div className="overflow-hidden w-full text-xs font-bold text-slate-950">
+              <div className="animate-marquee">
+                {t.tickerText}
+              </div>
+            </div>
+            <span className="hidden sm:inline bg-red-700 text-white text-[10px] font-bold px-2 py-0.5 rounded">NEW</span>
+          </div>
+
+          {/* 5. MAIN CONTENT CONTAINER (Spacious, Uncongested & Elegant Layout) */}
+          <main className="flex-1 w-full bg-white pb-12">
+            
+            {/* TAB: HOME PAGE */}
+            {activeTab === 'home' && (
+              <div className="space-y-12">
+                
+                {/* 1. OFFICIAL GIS MAP SECTION (Full width clean container, exactly as on smkc.gov.in) */}
+                <section className="w-full bg-[#f8fafc] border-b border-slate-200">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 space-y-4">
+                    
+                    {/* Map Header Bar with Layer Switcher & City Selectors */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="w-3.5 h-3.5 rounded-full bg-red-600 animate-ping flex-shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                              {t.mapHeading}
+                            </h2>
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
+                              थेट सुरू (LIVE)
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            सांगली, मिरज आणि कुपवाड शहर महानगरपालिका क्षेत्र • अधिकृत व अनधिकृत फलक भू-स्थानिक नकाशा
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Map Controls: Provider Switcher & Quick Jumps */}
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        
+                        {/* Google Maps / OSM Provider Selector */}
+                        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs font-bold">
+                          <span className="text-[11px] text-slate-500 px-2">नकाशा:</span>
+                          <button
+                            onClick={() => setMapTileType('hybrid')}
+                            className={`px-3 py-1 rounded transition-all text-xs flex items-center gap-1 ${
+                              mapTileType === 'hybrid'
+                                ? 'bg-emerald-700 text-white shadow-sm font-extrabold ring-1 ring-emerald-500'
+                                : 'text-slate-700 hover:text-emerald-700 hover:bg-slate-200'
+                            }`}
+                            title="Google Satellite Hybrid (Google उपग्रह थेट दृश्य)"
+                          >
+                            <span>🛰️</span>
+                            <span>उपग्रह मोड (Satellite)</span>
+                          </button>
+                          <button
+                            onClick={() => setMapTileType('google')}
+                            className={`px-2.5 py-1 rounded transition-all text-xs ${
+                              mapTileType === 'google'
+                                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                                : 'text-slate-700 hover:text-blue-700 hover:bg-slate-200'
+                            }`}
+                            title="Google Maps Roadmap (Google रस्ता नकाशा)"
+                          >
+                            🗺️ रस्ता नकाशा (Street)
+                          </button>
+                          <button
+                            onClick={() => setMapTileType('osm')}
+                            className={`px-2.5 py-1 rounded transition-all text-xs ${
+                              mapTileType === 'osm'
+                                ? 'bg-blue-600 text-white shadow-sm font-extrabold'
+                                : 'text-slate-700 hover:text-blue-700 hover:bg-slate-200'
+                            }`}
+                            title="OpenStreetMap Standard"
+                          >
+                            🌍 OSM
+                          </button>
+                        </div>
+
+                        {/* City Quick Jumps */}
+                        <div className="flex items-center bg-amber-50 p-1 rounded-lg border border-amber-200 text-xs font-bold">
+                          <span className="text-[11px] text-amber-800 px-1.5">शहर:</span>
+                          {[
+                            { id: 'all', label: `सर्व (${hoardings.length})` },
+                            { id: 'sangli', label: 'सांगली' },
+                            { id: 'miraj', label: 'मिरज' },
+                            { id: 'kupwad', label: 'कुपवाड' },
+                            { id: 'illegal', label: '⚠️ अनधिकृत' }
+                          ].map(f => (
+                            <button
+                              key={f.id}
+                              onClick={() => focusCity(f.id)}
+                              className={`px-2.5 py-1 rounded transition-all ${
+                                homeMapFilter === f.id
+                                  ? 'bg-[#c62828] text-white shadow-sm font-extrabold'
+                                  : 'text-slate-700 hover:text-black hover:bg-amber-100'
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Interactive Leaflet Map Container */}
+                    <div className="rounded-2xl overflow-hidden border-2 border-slate-300 shadow-md h-[540px] w-full relative bg-slate-100">
+                      <div ref={homeMapContainerRef} className="w-full h-full z-10" />
+
+                      {/* Map In-set Legend Bottom Right */}
+                      <div className="absolute bottom-4 right-4 z-20 bg-white/95 backdrop-blur-sm p-3 rounded-xl border border-slate-200 shadow-lg text-xs space-y-1.5 pointer-events-auto">
+                        <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-700 block border-b pb-1">
+                          नकाशा सूची (Legend)
+                        </span>
+                        <div className="flex flex-col gap-1 text-[11px]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-[#c62828] border border-white shadow-sm" />
+                            <span className="text-slate-800 font-semibold">अनधिकृत फलक (Illegal)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-[#dc2626] border border-white animate-pulse shadow-sm" />
+                            <span className="text-slate-800 font-semibold">अतिधोकादायक (Hazard)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-[#d97706] border border-white shadow-sm" />
+                            <span className="text-slate-800 font-semibold">मुदत संपलेले (Expired)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-[#16a34a] border border-white shadow-sm" />
+                            <span className="text-slate-800 font-semibold">अधिकृत (Permitted)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tri-city Quick Info Badge Top Left */}
+                      <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 shadow text-xs font-bold text-slate-800 pointer-events-auto">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping"></span>
+                        <span>SMKC त्रिशहर क्षेत्र: सांगली • मिरज • कुपवाड</span>
+                      </div>
+                    </div>
+
+                    {/* Clean Status & Metrics Strip */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <span className="text-xs text-slate-500 font-semibold block">{t.statsTotal}</span>
+                        <span className="text-2xl font-black text-slate-900 mt-1 block">{hoardings.length}</span>
+                        <span className="text-[11px] text-emerald-600 font-bold">१००% जिओ-टॅग केलेले</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-red-200 shadow-sm text-center">
+                        <span className="text-xs text-[#c62828] font-semibold block">{t.statsIllegal}</span>
+                        <span className="text-2xl font-black text-[#c62828] mt-1 block">
+                          {hoardings.filter(h => h.status === 'illegal' || h.status === 'critical_hazard').length}
+                        </span>
+                        <span className="text-[11px] text-red-600 font-bold">कलम २४४ उल्लंघन</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-amber-200 shadow-sm text-center">
+                        <span className="text-xs text-amber-700 font-semibold block">{t.statsFines}</span>
+                        <span className="text-2xl font-black text-amber-600 mt-1 block">₹१,०५,५००</span>
+                        <span className="text-[11px] text-slate-500 font-semibold">वसुली आदेश</span>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                        <span className="text-xs text-slate-500 font-semibold block">{t.statsSquads}</span>
+                        <span className="text-2xl font-black text-sky-700 mt-1 block">५ पथके</span>
+                        <span className="text-[11px] text-sky-600 font-bold">सांगली, मिरज, कुपवाड</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </section>
+
+                {/* 2. "लोकसेवा सेवा" SECTION (Matching smkc_mid_section_1_1791208838342.png) */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-8 space-y-6">
+                  <div className="border-b-2 border-orange-500 pb-2 flex items-center justify-between">
+                    <h3 className="text-2xl font-black text-[#c62828] tracking-tight">
+                      {t.servicesHeading}
+                    </h3>
+                    <span className="text-xs text-slate-500 font-semibold">नागरिक डिजिटल सेवा केंद्र</span>
+                  </div>
+
+                  {/* Search Bar for services */}
+                  <div className="max-w-md mx-auto relative">
+                    <input
+                      type="text"
+                      placeholder="सेवा शोधा (Search services)..."
+                      className="w-full bg-[#f8fafc] border border-slate-300 rounded-full px-5 py-2.5 text-xs outline-none focus:border-[#c62828] shadow-sm text-slate-700"
+                    />
+                    <span className="absolute right-4 top-2.5 text-slate-400">🔍</span>
+                  </div>
+
+                  {/* 6 Clean Spacious Cards with Red Center Icons */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                    
+                    {/* Card 1: Citizen Grievance */}
+                    <div
+                      onClick={() => setActiveTab('citizen')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        📢
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        अनधिकृत फलक तक्रार निवारण
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        आपल्या भागातील विनापरवाना व धोकादायक फलकांची तक्रार थेट मनपाकडे छायाचित्रासह नोंदवा.
+                      </p>
+                    </div>
+
+                    {/* Card 2: AI Vision Scanner */}
+                    <div
+                      onClick={() => setActiveTab('scanner')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        🤖
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        एआय संगणकीय दृष्टी स्कॅनर
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        YOLOv8x डीप व्हिजन व देवनागरी ओसीआर तंत्रज्ञानाद्वारे फलक व प्रायोजक स्वयंचलित पडताळणी.
+                      </p>
+                    </div>
+
+                    {/* Card 3: Sky Sign Permit */}
+                    <div
+                      onClick={() => setActiveTab('notice')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        📜
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        २४-तास निष्कासन नोटीस व दंड
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        महाराष्ट्र महानगरपालिका अधिनियम कलम २४४ व २४५ अंतर्गत स्वयंचलित कायदेशीर नोटीस निर्मिती.
+                      </p>
+                    </div>
+
+                    {/* Card 4: Property Tax */}
+                    <div
+                      onClick={() => alert('अधिकृत मालमत्ता कर पोर्टलकडे पुनर्निर्देशित करत आहे: https://smkc.gov.in')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        🏠
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        मालमत्ता कर भरणा (Property Tax)
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        मालमत्ता कर सोयीस्कर पद्धतीने थेट मनपा संकेतस्थळावर ऑनलाइन भरण्यासाठी सुरक्षित सेवा.
+                      </p>
+                    </div>
+
+                    {/* Card 5: Water Tax */}
+                    <div
+                      onClick={() => alert('अधिकृत पाणीकर पोर्टलकडे पुनर्निर्देशित करत आहे: https://smkc.gov.in')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        💧
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        पाणीकर कर भरणा (Water Tax)
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        पाणी बिल तपासणे, देयके भरणे व पाणीपुरवठा संबंधित नागरी तक्रारींचे तत्पर निवारण.
+                      </p>
+                    </div>
+
+                    {/* Card 6: Sky Sign Registration */}
+                    <div
+                      onClick={() => setActiveTab('map')}
+                      className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer text-center space-y-3 group"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-red-50 text-[#c62828] flex items-center justify-center text-xl mx-auto group-hover:scale-110 transition-transform">
+                        🗺️
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-[#c62828] transition-colors">
+                        जीआयएस प्रभाग फलक नोंदवही
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        सांगली, मिरज आणि कुपवाड शहरातील सर्व अधिकृत जाहिरात जागा व प्रभागनिहाय नकाशा.
+                      </p>
+                    </div>
+
+                  </div>
+                </section>
+
+                {/* 3. "महानगरपालिकेचे नेतृत्व व प्रशासन" SECTION (Exact replica of smkc_mid_section_3_1791208894020.png) */}
+                <section className="bg-slate-50 py-10 border-y border-slate-200">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-6">
+                    <div className="border-b-2 border-orange-500 pb-2">
+                      <h3 className="text-2xl font-black text-[#c62828] tracking-tight">
+                        {t.leadershipHeading}
+                      </h3>
+                      <p className="text-xs text-slate-500">सांगली मिरज आणि कुपवाड शहर महानगरपालिका पदाधिकारी व प्रशासकीय अधिकारी</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-2">
+                      {[
+                        { title: 'महापौर', name: 'श्री. धीरज सूर्यवंशी', role: 'प्रथम नागरिक', img: './assets/dhiraj.png' },
+                        { title: 'उपमहापौर', name: 'श्री. गजानन मगदूम', role: 'उपमहापौर', img: './assets/gajanan.png' },
+                        { title: 'महापालिका आयुक्त', name: 'श्रीम. संजीता मोहपात्रा (भा.प्र.से.)', role: 'प्रशासक व आयुक्त', img: './assets/sanjita.png' },
+                        { title: 'अतिरिक्त आयुक्त-१', name: 'श्री. राहुल रोकडे', role: 'प्रशासन', img: './assets/rahul.png' },
+                        { title: 'अतिरिक्त आयुक्त-२', name: 'श्री. नीलेश देशमुख', role: 'अतिक्रमण व आकाशचिन्हे', img: './assets/nilesh.png' }
+                      ].map((lead, idx) => (
+                        <div key={idx} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm text-center p-3.5 flex flex-col items-center justify-between hover:shadow-md transition-shadow">
+                          <div className="w-28 h-32 rounded-xl overflow-hidden bg-slate-100 mb-2.5 border-2 border-slate-200 shadow-inner flex items-center justify-center">
+                            <img 
+                              src={lead.img} 
+                              alt={lead.name} 
+                              className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                // Fallback to public assets if needed
+                                e.target.onerror = null;
+                                e.target.src = '/assets/' + lead.img.split('/').pop();
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[11px] font-bold text-[#c62828] block">{lead.title}</span>
+                            <span className="text-xs font-black text-slate-800 block mt-0.5">{lead.name}</span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">{lead.role}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                {/* 4. "महत्वाचे दुवे" SECTION (Matching smkc_mid_section_4_1791208919950.png) */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-8 space-y-6">
+                  <div className="border-b-2 border-orange-500 pb-2">
+                    <h3 className="text-2xl font-black text-[#c62828] tracking-tight">
+                      {t.linksHeading}
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div
+                      onClick={() => alert('अर्थसंकल्प व जमाखर्च माहिती: https://smkc.gov.in')}
+                      className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-red-300 transition-colors cursor-pointer"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-red-50 text-[#c62828] flex items-center justify-center text-xl flex-shrink-0">
+                        📊
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">अर्थसंकल्प व जमा-खर्च</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">मनपा वार्षिक विकास निधी व विकास कामे</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => alert('मनपा ठराव व कायदेशीर आदेश: https://smkc.gov.in')}
+                      className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-red-300 transition-colors cursor-pointer"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-red-50 text-[#c62828] flex items-center justify-center text-xl flex-shrink-0">
+                        ⚖️
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">ठराव व कायदेशीर आदेश</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">महापालिका सभा ठराव व गॅझेट अधिसूचना</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveTab('citizen')}
+                      className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-red-300 transition-colors cursor-pointer"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-red-50 text-[#c62828] flex items-center justify-center text-xl flex-shrink-0">
+                        💬
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">नागरिकांची तक्रार व निवारण</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">२४ तास कार्यरत मदत कक्ष व निवारण</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+            )}
+
+            {/* TAB: AI SMART SCANNER STUDIO */}
+            {activeTab === 'scanner' && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                      <span className="bg-red-50 text-[#c62828] border border-red-200 text-xs font-bold px-3 py-0.5 rounded-full inline-block mb-1">
+                        YOLOv8x Deep Vision & Mobile Mapping 2026
+                      </span>
+                      <h2 className="text-2xl font-black text-slate-900">एआय अनधिकृत बॅनर शोध व स्कॅनर प्रणाली (Drishti-Banner AI)</h2>
+                      <p className="text-slate-600 text-xs">मोबाइल मॅपिंग, 3D खोली अंदाज, देवनागरी ओसीआर व मनपा डेटाबेस पडताळणी</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => runAIAnalysis(scannerPreset)}
+                        disabled={scannerRunning}
+                        className="px-5 py-2.5 bg-[#c62828] hover:bg-[#b71c1c] text-white font-bold text-xs rounded-xl shadow flex items-center gap-2"
+                      >
+                        {scannerRunning ? 'विश्लेषण सुरू आहे...' : 'स्कॅन पुन्हा चालवा'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Preset Selector */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs">
+                    <span className="font-bold text-slate-500">चाचणीसाठी बॅनर निवडा:</span>
+                    {hoardings.map(h => (
+                      <button
+                        key={h.id}
+                        onClick={() => runAIAnalysis(h)}
+                        className={`px-3 py-1.5 rounded-lg border whitespace-nowrap font-semibold ${
+                          scannerPreset.id === h.id ? 'bg-[#c62828] text-white border-[#c62828]' : 'bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        {h.city}: {h.locationName.split('near')[0]}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 7-Step Horizontal Stepper */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 pt-2">
+                    {[
+                      { step: 1, name: '१. मोबाइल मॅपिंग' },
+                      { step: 2, name: '२. सीएनएन शोध' },
+                      { step: 3, name: '३. 3D खोली' },
+                      { step: 4, name: '४. वर्गीकरण' },
+                      { step: 5, name: '५. देवनागरी OCR' },
+                      { step: 6, name: '६. मनपा नोंदवही' },
+                      { step: 7, name: '७. नोटीस व कारवाई' }
+                    ].map(s => (
+                      <div
+                        key={s.step}
+                        className={`p-2.5 rounded-xl border text-center text-xs transition-all ${
+                          activeScannerStep >= s.step
+                            ? 'bg-red-50 text-[#c62828] border-red-200 font-bold'
+                            : 'bg-slate-50 text-slate-400 border-slate-200'
+                        }`}
+                      >
+                        {s.name}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Split Visualizer */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4">
+                    <div className="lg:col-span-7 space-y-3">
+                      <div className="relative rounded-xl overflow-hidden border border-slate-300 h-80 bg-slate-900">
+                        <img
+                          src={customUploadUrl || scannerPreset.imageUrl}
+                          alt="AI Vision Feed"
+                          className="w-full h-full object-cover opacity-90"
+                        />
+                        <div className="absolute top-3 left-3 bg-red-600/90 text-white font-mono text-[10px] px-2 py-1 rounded">
+                          CAMERA: RTK-GNSS 16.8455°N, 74.6015°E
+                        </div>
+                        <div className="absolute inset-8 border-2 border-dashed border-red-500 rounded flex flex-col justify-between p-2 pointer-events-none">
+                          <span className="bg-red-600 text-white font-mono text-[10px] px-1.5 py-0.5 rounded self-start">
+                            {scannerPreset.classification} • 97.4%
+                          </span>
+                          <span className="bg-black/75 text-white font-mono text-[10px] px-1.5 py-0.5 rounded self-end">
+                            {scannerPreset.dimensions}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+                        <div className="flex justify-between font-bold text-slate-800">
+                          <span>स्थान: {scannerPreset.locationName}</span>
+                          <span className={scannerPreset.status === 'permitted' ? 'text-emerald-600' : 'text-red-600 font-mono'}>
+                            {scannerPreset.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="p-2.5 bg-white rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                          <strong>ओसीआर मजकूर:</strong> "{scannerPreset.ocrText}"
+                        </div>
+                        {scannerPreset.violation && (
+                          <div className="p-2 bg-red-50 rounded border border-red-200 text-red-800 text-[11px]">
+                            <strong>कायदेशीर उल्लंघन:</strong> {scannerPreset.violation}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Console Logs */}
+                    <div className="lg:col-span-5 bg-slate-950 text-emerald-400 p-4 rounded-xl font-mono text-xs overflow-y-auto h-80 border border-slate-800 space-y-1.5">
+                      <div className="text-slate-400 border-b border-slate-800 pb-1 font-bold">
+                        SYSTEM TERMINAL: AI SMART SCANNER EXECUTION LOGS
+                      </div>
+                      {scannerLogs.map((log, index) => (
+                        <div key={index} className="leading-relaxed">
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: GIS MAP EXPANDED */}
+            {activeTab === 'map' && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-3">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900">सांगली, मिरज व कुपवाड जीआयएस प्रभाग नकाशा</h2>
+                      <p className="text-xs text-slate-500">संपूर्ण महापालिका क्षेत्रातील अधिकृत व अनधिकृत फलकांची थेट पाहणी</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-8 rounded-xl overflow-hidden border border-slate-300 h-[560px]">
+                      <div ref={homeMapContainerRef} className="w-full h-full" />
+                    </div>
+
+                    <div className="lg:col-span-4 space-y-3 overflow-y-auto max-h-[560px] pr-1">
+                      <h3 className="font-bold text-sm text-slate-800">फलक सूची ({hoardings.length})</h3>
+                      {hoardings.map(h => (
+                        <div
+                          key={h.id}
+                          onClick={() => {
+                            if (homeMapInstanceRef.current) {
+                              homeMapInstanceRef.current.flyTo([h.lat, h.lng], 16);
+                            }
+                          }}
+                          className="p-3.5 bg-white rounded-xl border border-slate-200 hover:border-red-300 shadow-sm transition-all cursor-pointer text-xs space-y-1"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-900">{h.city} • {h.ward.split('-')[1] || h.ward}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              h.status === 'permitted' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {h.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="text-slate-600 text-[11px] truncate">{h.locationName}</div>
+                          <div className="text-[#c62828] font-bold text-[11px]">
+                            {h.fineAmount > 0 ? `दंड: ₹${h.fineAmount.toLocaleString('en-IN')}` : 'अधिकृत'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: CITIZEN GRIEVANCE */}
+            {activeTab === 'citizen' && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <div className="border-b pb-2">
+                      <h2 className="text-2xl font-black text-[#c62828]">नागरिक तक्रार निवारण कक्ष</h2>
+                      <p className="text-xs text-slate-600">आपल्या परिसरातील अनधिकृत किंवा धोकादायक बॅनरची तक्रार थेट मनपाकडे नोंदवा</p>
+                    </div>
+
+                    {complaintSuccessToken && (
+                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs">
+                        आपली तक्रार मनपा नियंत्रण कक्षाकडे नोंदवली गेली! तक्रार क्र.: <strong className="font-mono">{complaintSuccessToken}</strong>. २४ तासांत कारवाई अहवाल पाठवण्यात येईल.
+                      </div>
+                    )}
+
+                    <form onSubmit={handleComplaint} className="space-y-4 text-xs">
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">तक्रारदाराचे नाव</label>
+                        <input
+                          type="text"
+                          required
+                          value={cForm.name}
+                          onChange={e => setCForm({ ...cForm, name: e.target.value })}
+                          className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-[#c62828]"
+                          placeholder="उदा. राहुल तानाजी पाटील"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">शहर निवडा</label>
+                          <select
+                            value={cForm.city}
+                            onChange={e => setCForm({ ...cForm, city: e.target.value })}
+                            className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-[#c62828]"
+                          >
+                            <option value="सांगली">सांगली</option>
+                            <option value="मिरज">मिरज</option>
+                            <option value="कुपवाड">कुपवाड</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-slate-700 font-semibold mb-1">नेमके ठिकाण / चौक</label>
+                          <input
+                            type="text"
+                            required
+                            value={cForm.location}
+                            onChange={e => setCForm({ ...cForm, location: e.target.value })}
+                            className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-[#c62828]"
+                            placeholder="उदा. विश्रामबाग चौक, सांगली"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-slate-700 font-semibold mb-1">तक्रारीचे स्वरूप / अडथळा</label>
+                        <textarea
+                          rows="3"
+                          required
+                          value={cForm.desc}
+                          onChange={e => setCForm({ ...cForm, desc: e.target.value })}
+                          className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-[#c62828]"
+                          placeholder="बॅनरमुळे वाहतुकीस अडथळा, धोकादायक लोखंडी चौकट किंवा सिग्नल बंद..."
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-[#c62828] hover:bg-[#b71c1c] text-white font-bold text-xs rounded-xl shadow"
+                      >
+                        तक्रार दाखल करा
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="lg:col-span-5 bg-slate-50 rounded-2xl p-6 border border-slate-200 space-y-4">
+                    <h3 className="font-bold text-sm text-slate-900 border-b pb-2">अलीकडील तक्रारी व कारवाई</h3>
+                    <div className="space-y-3">
+                      {complaints.map(c => (
+                        <div key={c.id} className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-sm">
+                          <div className="flex justify-between font-mono font-bold text-[#c62828]">
+                            <span>{c.id}</span>
+                            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">{c.status}</span>
+                          </div>
+                          <div className="font-bold text-slate-900">{c.location} ({c.city})</div>
+                          <p className="text-slate-600 text-[11px]">{c.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: LEGAL NOTICE & FINES */}
+            {activeTab === 'notice' && (
+              <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center no-print">
+                  <div>
+                    <h2 className="text-xl font-black text-[#c62828]">महाराष्ट्र महानगरपालिका अधिनियम १९४९ - कलम २४४ व २४५ अन्वये नोटीस</h2>
+                    <p className="text-xs text-slate-600">२४ तासांत अनधिकृत फलक स्वखर्चाने काढणेबाबत अधिकृत कायदेशीर नोटीस</p>
+                  </div>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2.5 bg-[#c62828] hover:bg-[#b71c1c] text-white font-bold text-xs rounded-xl shadow flex items-center gap-2"
+                  >
+                    <span>🖨️</span>
+                    <span>नोटीस प्रिंट करा</span>
+                  </button>
+                </div>
+
+                {/* Printable Notice Paper */}
+                <div className="bg-white text-slate-900 rounded-2xl p-8 sm:p-12 shadow-md border border-slate-300 font-serif space-y-5 printable-notice">
+                  <div className="text-center pb-4 border-b-2 border-slate-900 space-y-1">
+                    <img src="./smkc_logo.png" alt="SMKC Official Seal" className="w-16 h-16 mx-auto object-contain drop-shadow" />
+                    <h2 className="text-xl font-black uppercase text-slate-950">सांगली मिरज आणि कुपवाड शहर महानगरपालिका</h2>
+                    <h3 className="text-xs font-bold text-slate-700 uppercase">SANGLI MIRAJ KUPWAD CITY MUNICIPAL CORPORATION</h3>
+                    <p className="text-xs text-slate-600 font-sans">आकाशचिन्हे व परवाना विभाग (Sky Signs & Anti-Defacement Dept)</p>
+                    <p className="text-[11px] text-slate-500 font-sans">मुख्यालय: शहर पोलीस ठाण्यासमोर, राजवाडा चौक, सांगली - ४१६४१६</p>
+                  </div>
+
+                  <div className="flex justify-between text-xs font-sans border-b pb-2">
+                    <span><strong>जा.क्र.:</strong> SMKC/ENF/ADV/2026/89412</span>
+                    <span><strong>दिनांक:</strong> {new Date().toLocaleDateString('en-GB')}</span>
+                  </div>
+
+                  <div className="text-xs font-sans bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <strong>प्रति (To):</strong> {selectedNoticeItem.advertiser || 'संबधित आयोजक / मालक'}<br/>
+                    <strong>ठिकाण:</strong> {selectedNoticeItem.locationName}, {selectedNoticeItem.ward}, {selectedNoticeItem.city}
+                  </div>
+
+                  <div className="text-sm font-bold bg-red-50 p-2.5 rounded border-l-4 border-[#c62828] text-slate-900 font-sans">
+                    विषय: विनापरवाना लावलेला अनधिकृत जाहिरात फलक/फ्लेक्स २४ तासांत काढून घेणेबाबत नोटीस.
+                  </div>
+
+                  <div className="text-xs leading-relaxed text-slate-800 space-y-3 font-sans text-justify">
+                    <p>
+                      आपणांस याद्वारे कळविण्यात येते की, <strong>{selectedNoticeItem.locationName}</strong> येथे महानगरपालिकेच्या पूर्वपरवानगीशिवाय अनधिकृत फलक लावल्याचे निष्पन्न झाले आहे. सदर कृत्य हे <strong>महाराष्ट्र महानगरपालिका अधिनियम, १९४९ च्या कलम २४४ व २४५</strong>, <strong>मा. मुंबई उच्च न्यायालय जनहित याचिका क्र. १५५/२०११</strong> आणि <strong>महाराष्ट्र मालमत्तेच्या विद्रूपीकरणास प्रतिबंधक कायदा, १९९५</strong> चे उल्लंघन आहे.
+                    </p>
+                    <div className="p-3 bg-slate-50 border rounded text-xs space-y-1">
+                      <div><strong>ओसीआर द्वारे आढळलेला मजकूर:</strong> "{selectedNoticeItem.ocrText || 'N/A'}"</div>
+                      <div><strong>आकारमान:</strong> {selectedNoticeItem.dimensions}</div>
+                      <div className="text-[#c62828] font-bold">आकारलेला दंड रक्कम: ₹{(selectedNoticeItem.fineAmount || 20000).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div className="p-3 bg-red-50 border-l-4 border-red-600 text-red-950 font-bold">
+                      २४ तासांत हा फलक स्वखर्चाने काढून न घेतल्यास मनपाच्या पथकामार्फत तो जप्त करण्यात येईल आणि फौजदारी गुन्हा दाखल करून निष्कासनाचा खर्च वसूल केला जाईल.
+                    </div>
+                  </div>
+
+                  <div className="pt-6 flex justify-between items-end text-xs font-sans border-t">
+                    <div className="text-[10px] text-slate-400">[मनपा अधिकृत शिक्का]</div>
+                    <div className="text-right">
+                      <div className="font-bold text-slate-900">डॉ. एस. के. महाजन</div>
+                      <div className="text-slate-600">उपायुक्त (अतिक्रमण व आकाशचिन्हे), सांगली मनपा</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: ABOUT SMKC */}
+            {activeTab === 'about' && (
+              <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 space-y-6">
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4 text-xs leading-relaxed">
+                  <h2 className="text-2xl font-black text-[#c62828] border-b pb-3">महानगरपालिके विषयी (About SMKC)</h2>
+                  <p className="text-slate-700 text-sm">
+                    सांगली मिरज आणि कुपवाड शहर महानगरपालिका ही महाराष्ट्र राज्यातील सांगली जिल्ह्यातील सांगली, मिरज व कुपवाड या तीन जुळ्या शहरांचे प्रशासन पाहणारी अग्रगण्य स्थानिक स्वराज्य संस्था आहे.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                      <h4 className="font-bold text-base text-slate-900">सांगली शहर</h4>
+                      <p className="text-slate-600">कृष्णा नदीच्या पवित्र तीरावर वसलेले ऐतिहासिक शहर. हळदीचे आंतरराष्ट्रीय व्यापारी केंद्र व संपन्न नाट्यभूमी.</p>
+                    </div>
+                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                      <h4 className="font-bold text-base text-slate-900">मिरज शहर</h4>
+                      <p className="text-slate-600">प्रसिद्ध रेल्वे जंक्शन व दक्षिण महाराष्ट्राची वैद्यकीय पंढरी. शास्त्रीय संगीत व तंतुवाद्य निर्मितीचे जागतिक केंद्र.</p>
+                    </div>
+                    <div className="p-5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                      <h4 className="font-bold text-base text-slate-900">कुपवाड शहर</h4>
+                      <p className="text-slate-600">प्रमुख औद्योगिक वसाहत (MIDC), अवजड अभियांत्रिकी उद्योग, वस्त्रोद्योग व व्यावसायिक दालनांचे केंद्र.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB: SERVICES & PAY ONLINE REDIRECT */}
+            {(activeTab === 'services' || activeTab === 'payonline') && (
+              <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 text-center space-y-4">
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <h3 className="text-2xl font-black text-[#c62828]">अधिकृत ऑनलाइन सेवा व कर भरणा</h3>
+                  <p className="text-xs text-slate-600">
+                    मालमत्ता कर, पाणी बिल, नागरी परवाने व जन्म-मृत्यू दाखल्यांसाठी अधिकृत शासकीय पोर्टल:
+                  </p>
+                  <a
+                    href="https://smkc.gov.in"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block px-6 py-3 bg-[#c62828] text-white font-bold text-xs rounded-xl shadow hover:bg-[#b71c1c]"
+                  >
+                    https://smkc.gov.in मुख्य संकेतस्थळावर जा →
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* =========================================================================
+                OFFICER LOGIN PORTAL & WORK PROGRESS CONSOLE (AT VERY BOTTOM OF WEBSITE)
+                ========================================================================= */}
+            <section id="officer-portal-section" className="mt-14 border-t-4 border-[#c62828] bg-slate-900 text-white py-12 px-4 sm:px-8">
+              <div className="max-w-7xl mx-auto space-y-8">
+                
+                {/* Section Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="bg-[#c62828] text-white text-[11px] font-black uppercase px-2.5 py-0.5 rounded tracking-wide">
+                        SMKC Official Control
+                      </span>
+                      <span className="bg-amber-400/20 text-amber-300 text-[11px] font-bold px-2.5 py-0.5 rounded border border-amber-400/30">
+                        कलम २४४/२४५ अंमलबजावणी कक्ष
+                      </span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      अधिकारी पोर्टल व कामाची प्रगती नियंत्रण कक्ष
+                    </h2>
+                    <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                      नागरिकांनी स्कॅन केलेल्या फलकांची पडताळणी, ७-नियम मूल्यांकन आणि प्रत्यक्ष क्षेत्रीय कारवाईची प्रगती अद्ययावत करा.
+                    </p>
+                  </div>
+
+                  {/* Public Citizen Tracking Box */}
+                  <form onSubmit={handlePublicTrack} className="bg-slate-800/90 p-3 rounded-2xl border border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-lg">
+                    <div className="flex items-center gap-2 px-2">
+                      <span className="text-amber-400 text-base">🔍</span>
+                      <span className="text-xs font-bold text-slate-300 whitespace-nowrap">नागरिक टोकन ट्रॅकर:</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="उदा. SMKC-SCAN-2026-7841"
+                      value={trackSearchToken}
+                      onChange={e => setTrackSearchToken(e.target.value)}
+                      className="bg-slate-950 text-white text-xs px-3 py-2 rounded-xl border border-slate-600 focus:outline-none focus:border-amber-400 font-mono"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl transition-all shadow"
+                    >
+                      प्रगती तपासा
+                    </button>
+                  </form>
+                </div>
+
+                {/* Citizen Public Tracking Result Display */}
+                {trackSearchResult && (
+                  <div className="bg-slate-800/80 border-2 border-amber-400/60 rounded-2xl p-5 shadow-2xl">
+                    {trackSearchResult === 'NOT_FOUND' ? (
+                      <div className="text-center py-4 space-y-2">
+                        <span className="text-3xl">⚠️</span>
+                        <h4 className="font-bold text-sm text-red-400">टोकन आढळले नाही!</h4>
+                        <p className="text-xs text-slate-400">कृपया आपला अचूक १०-अंकी स्कॅन टोकन क्रमांक (उदा. SMKC-SCAN-2026-7841) तपासा.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">📋</span>
+                            <div>
+                              <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider">अधिकृत तक्रार टोकन</span>
+                              <h4 className="text-base font-mono font-bold text-white">{trackSearchResult.id}</h4>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">सध्याची स्थिती:</span>
+                            <span className="bg-amber-400/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/40">
+                              {trackSearchResult.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar Display */}
+                        <div>
+                          <div className="flex justify-between text-xs font-bold mb-1">
+                            <span className="text-slate-300">कारवाई प्रगती (Work Progress Implementation):</span>
+                            <span className="text-emerald-400 font-mono text-sm">{trackSearchResult.workProgress}% पूर्ण</span>
+                          </div>
+                          <div className="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                            <div
+                              className="bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-400 h-full rounded-full transition-all duration-700"
+                              style={{ width: `${trackSearchResult.workProgress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-slate-900/90 p-4 rounded-xl border border-slate-700/80">
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">तक्रारदार:</span>
+                            <span className="font-bold text-white">{trackSearchResult.citizenName} ({trackSearchResult.citizenPhone})</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">स्थान व प्रभाग:</span>
+                            <span className="font-bold text-white">{trackSearchResult.city} • {trackSearchResult.location}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">नियुक्त पथक व अधिकारी:</span>
+                            <span className="font-bold text-emerald-400">{trackSearchResult.assignedSquad}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs">
+                          <strong className="text-amber-400">अधिकाऱ्यांचे प्रत्यक्ष शेरे (Officer Action Remarks): </strong>
+                          <span className="text-slate-200">{trackSearchResult.progressRemarks || 'पाहणी प्रक्रिया सुरू आहे.'}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* OFFICER PORTAL AUTHENTICATION & CONSOLE */}
+                {!officerLoggedIn ? (
+                  /* Login Card */
+                  <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-2xl mx-auto shadow-2xl space-y-6">
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 rounded-2xl bg-[#c62828] text-white flex items-center justify-center text-3xl mx-auto shadow-lg">
+                        🛡️
+                      </div>
+                      <h3 className="text-xl font-black text-white">महानगरपालिका अधिकारी लॉगिन</h3>
+                      <p className="text-slate-400 text-xs">
+                        केवळ अधिकृत प्रभाग अधिकारी, अतिक्रमण निर्मूलन पथक व कनिष्ठ अभियंत्यांसाठी
+                      </p>
+                    </div>
+
+                    {officerLoginErr && (
+                      <div className="p-3 bg-red-950/80 border border-red-700 text-red-200 text-xs rounded-xl text-center">
+                        {officerLoginErr}
+                      </div>
+                    )}
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (officerIdInput.trim() && officerPassInput.trim()) {
+                          setOfficerProfile({
+                            name: officerIdInput.includes('mahajan') ? 'Dr. S. K. Mahajan' : officerIdInput.includes('patil') ? 'P. V. Patil' : 'SMKC Municipal Officer',
+                            role: 'Ward Officer / Enforcement Chief',
+                            ward: 'Sangli-Miraj Central Control',
+                            id: officerIdInput
+                          });
+                          setOfficerLoggedIn(true);
+                          setOfficerLoginErr('');
+                        } else {
+                          setOfficerLoginErr('कृपया योग्य अधिकारी ओळखपत्र व पासवर्ड प्रविष्ट करा.');
+                        }
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">अधिकारी आयडी / ईमेल (Officer ID)</label>
+                        <input
+                          type="text"
+                          required
+                          value={officerIdInput}
+                          onChange={e => setOfficerIdInput(e.target.value)}
+                          placeholder="उदा. dr.mahajan@smkc.gov.in"
+                          className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-300 mb-1">पासवर्ड (Password)</label>
+                        <input
+                          type="password"
+                          required
+                          value={officerPassInput}
+                          onChange={e => setOfficerPassInput(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-slate-950 border border-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-[#c62828] hover:bg-[#b71c1c] text-white font-bold text-xs py-3 rounded-xl shadow-lg transition-all"
+                      >
+                        सुरक्षित लॉगिन करा (Secure Officer Login) →
+                      </button>
+                    </form>
+
+                    {/* Quick Demo 1-Click Login Profiles */}
+                    <div className="border-t border-slate-700 pt-5 space-y-3">
+                      <span className="text-[11px] font-bold text-slate-400 block text-center">
+                        त्वरित चाचणीसाठी अधिकारी प्रोफाइल निवडा (1-Click Demo Profiles):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOfficerProfile({
+                              name: 'Dr. S. K. Mahajan',
+                              role: 'Ward Officer (प्रभाग अधिकारी)',
+                              ward: 'Sangli Prabhag 03 & 04',
+                              id: 'dr.mahajan@smkc.gov.in'
+                            });
+                            setOfficerLoggedIn(true);
+                          }}
+                          className="p-2.5 bg-slate-900 hover:bg-slate-950 rounded-xl border border-slate-700 text-left text-xs transition-all hover:border-amber-400"
+                        >
+                          <span className="font-bold text-amber-300 block">डॉ. एस. के. महाजन</span>
+                          <span className="text-[10px] text-slate-400 block">प्रभाग अधिकारी, सांगली</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOfficerProfile({
+                              name: 'P. V. Patil',
+                              role: 'Enforcement Chief (अतिक्रमण प्रमुख)',
+                              ward: 'Miraj Rapid Response Squad',
+                              id: 'pv.patil@smkc.gov.in'
+                            });
+                            setOfficerLoggedIn(true);
+                          }}
+                          className="p-2.5 bg-slate-900 hover:bg-slate-950 rounded-xl border border-slate-700 text-left text-xs transition-all hover:border-amber-400"
+                        >
+                          <span className="font-bold text-amber-300 block">पी. व्ही. पाटील</span>
+                          <span className="text-[10px] text-slate-400 block">अतिक्रमण प्रमुख, मिरज</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOfficerProfile({
+                              name: 'Er. V. R. Kulkarni',
+                              role: 'Junior Engineer (कनिष्ठ अभियंता)',
+                              ward: 'Kupwad MIDC Zone',
+                              id: 'vr.kulkarni@smkc.gov.in'
+                            });
+                            setOfficerLoggedIn(true);
+                          }}
+                          className="p-2.5 bg-slate-900 hover:bg-slate-950 rounded-xl border border-slate-700 text-left text-xs transition-all hover:border-amber-400"
+                        >
+                          <span className="font-bold text-amber-300 block">इंजि. व्ही. आर. कुलकर्णी</span>
+                          <span className="text-[10px] text-slate-400 block">कनिष्ठ अभियंता, कुपवाड</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* LOGGED-IN OFFICER WORK PROGRESS CONSOLE */
+                  <div className="space-y-6">
+                    {/* Officer Status Top Banner */}
+                    <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-xl font-bold">
+                          👮
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-white text-base">{officerProfile?.name}</h4>
+                            <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                              Active Officer
+                            </span>
+                          </div>
+                          <p className="text-slate-400 text-xs">
+                            {officerProfile?.role} • {officerProfile?.ward}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-slate-300">एकूण प्राप्त स्कॅन्स: <strong className="text-white font-mono">{scannedSubmissions.length}</strong></span>
+                        <button
+                          onClick={() => {
+                            setOfficerLoggedIn(false);
+                            setOfficerProfile(null);
+                          }}
+                          className="bg-slate-900 hover:bg-red-950/80 text-red-300 hover:text-red-200 border border-slate-700 hover:border-red-700 text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+                        >
+                          लॉगआउट (Logout)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Success Alert if Progress Updated */}
+                    {officerUpdateSuccess && (
+                      <div className="p-4 bg-emerald-950/90 border border-emerald-500 rounded-2xl text-emerald-200 text-xs font-bold flex items-center gap-2">
+                        <span>✅</span>
+                        <span>{officerUpdateSuccess}</span>
+                      </div>
+                    )}
+
+                    {/* Split View: Submissions Queue (Left) & Deep Audit & Progress Slider (Right) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      
+                      {/* Left: Scanned Submissions Queue */}
+                      <div className="lg:col-span-5 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                            <span>📥</span>
+                            <span>नागरिकांनी स्कॅन केलेले फलक ({scannedSubmissions.length})</span>
+                          </h4>
+                          <span className="text-[10px] text-slate-400">निवडण्यासाठी क्लिक करा</span>
+                        </div>
+
+                        <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                          {scannedSubmissions.map(item => {
+                            const isSelected = selectedOfficerScanId === item.id;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setSelectedOfficerScanId(item.id);
+                                  setOfficerStage(item.status);
+                                  setOfficerProgressPercent(item.workProgress);
+                                  setOfficerRemarks(item.progressRemarks || '');
+                                  setOfficerSquad(item.assignedSquad || 'Sangli Enforcement Squad 01');
+                                }}
+                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-slate-800 border-amber-400 shadow-lg shadow-amber-400/10'
+                                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-slate-600'
+                                }`}
+                              >
+                                <div className="flex gap-3">
+                                  <img
+                                    src={item.imageUrl}
+                                    alt="Thumbnail"
+                                    className="w-16 h-16 rounded-xl object-cover border border-slate-700 flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="font-mono text-xs font-bold text-amber-400 truncate">{item.id}</span>
+                                      <span className="text-[10px] text-slate-400">{item.scanDate}</span>
+                                    </div>
+                                    <h5 className="font-bold text-xs text-white truncate">{item.citizenName}</h5>
+                                    <p className="text-[11px] text-slate-300 truncate">{item.city} • {item.location}</p>
+                                    
+                                    {/* Mini Progress */}
+                                    <div className="pt-1">
+                                      <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                                        <span>{item.status}</span>
+                                        <span className="font-mono text-emerald-400 font-bold">{item.workProgress}%</span>
+                                      </div>
+                                      <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                          className="bg-emerald-500 h-full rounded-full"
+                                          style={{ width: `${item.workProgress}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Right: Detailed Analysis & Work Progress Implementation Controls */}
+                      <div className="lg:col-span-7 bg-slate-800/90 rounded-3xl p-6 border border-slate-700 space-y-6">
+                        {(() => {
+                          const activeItem = scannedSubmissions.find(s => s.id === selectedOfficerScanId) || scannedSubmissions[0];
+                          if (!activeItem) return <div className="text-slate-400 text-xs">कोणताही फलक निवडलेला नाही.</div>;
+
+                          return (
+                            <>
+                              {/* Selected Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-4">
+                                <div>
+                                  <span className="text-[10px] text-amber-400 uppercase font-mono tracking-wider">निवडलेला फलक तपशील</span>
+                                  <h4 className="text-lg font-black text-white font-mono">{activeItem.id}</h4>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-[10px] text-red-400 block font-bold uppercase">संभाव्य दंड वसुली</span>
+                                  <span className="text-lg font-black text-red-400 font-mono">₹{activeItem.calculatedFine ? activeItem.calculatedFine.toLocaleString('en-IN') : '१५,०००'}</span>
+                                </div>
+                              </div>
+
+                              {/* Photo & Citizen Info Card */}
+                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                                <div className="sm:col-span-5">
+                                  <img
+                                    src={activeItem.imageUrl}
+                                    alt="Full Banner"
+                                    className="w-full h-44 object-cover rounded-2xl border border-slate-700"
+                                  />
+                                </div>
+                                <div className="sm:col-span-7 space-y-2 text-xs bg-slate-900/80 p-3.5 rounded-2xl border border-slate-700/80">
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block">तक्रारदार नागरिक:</span>
+                                    <span className="font-bold text-white text-sm">{activeItem.citizenName}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block">संपर्क मोबाईल:</span>
+                                    <a href={`tel:${activeItem.citizenPhone}`} className="font-mono font-bold text-amber-400 hover:underline">
+                                      {activeItem.citizenPhone}
+                                    </a>
+                                    {activeItem.citizenEmail && (
+                                      <span className="text-slate-400 text-[11px] block">{activeItem.citizenEmail}</span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block">स्थान / लँडमार्क:</span>
+                                    <span className="text-slate-200">{activeItem.city} • {activeItem.location}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 text-[10px] block">नागरिकाची नोंद:</span>
+                                    <p className="text-slate-300 italic">{activeItem.notes || 'कोणतीही अतिरिक्त नोंद नाही'}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* 7-Rule SMKC Analysis Verdict */}
+                              <div className="p-4 bg-slate-900/90 rounded-2xl border border-slate-700/80 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-200">मनपा ७-नियम पडताळणी निष्कर्ष (SMKC 7-Rule Verdict):</span>
+                                  <span className="text-[10px] bg-red-950 text-red-300 px-2.5 py-0.5 rounded font-mono font-bold border border-red-700">
+                                    {activeItem.overallVerdict || 'Illegal / High Hazard'}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1">
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✓ १. मनपा हद्द: <strong className="text-emerald-400">वैध</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✗ २. परवाना: <strong className="text-red-400">विनापरवाना</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✗ ३. Setback: <strong className="text-red-400">धोकादायक</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✓ ४. शांतता क्षेत्र: <strong className="text-emerald-400">बाहेर</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✗ ५. वारा-भार: <strong className="text-red-400">कच्चा</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✗ ६. विद्रूपीकरण: <strong className="text-red-400">उल्लंघन</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ✗ ७. क्यूआर कोड: <strong className="text-red-400">गहाळ</strong>
+                                  </div>
+                                  <div className="p-1.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                                    ⚖️ नोटीस: <strong className="text-amber-400">२४ तास</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* WORK PROGRESS IMPLEMENTATION CONTROLS (THE CORE USER REQUIREMENT) */}
+                              <form onSubmit={handleOfficerProgressUpdate} className="bg-slate-950 p-5 rounded-2xl border-2 border-amber-400/50 space-y-4 shadow-xl">
+                                <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
+                                  <h5 className="font-black text-sm text-amber-300 flex items-center gap-1.5">
+                                    <span>⚙️</span>
+                                    <span>कामाची प्रगती अंमलबजावणी (Update Work Progress Implementation)</span>
+                                  </h5>
+                                  <span className="text-[10px] text-slate-400">डेटाबेसमध्ये थेट अद्ययावत होते</span>
+                                </div>
+
+                                {/* Progress Percentage Slider */}
+                                <div className="space-y-1.5">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <label className="font-bold text-slate-300">
+                                      प्रगती टक्केवारी (Work Progress Percentage):
+                                    </label>
+                                    <span className="bg-emerald-500/20 text-emerald-300 font-mono font-bold text-sm px-3 py-0.5 rounded-full border border-emerald-500/40">
+                                      {officerProgressPercent}% पूर्ण
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="5"
+                                    value={officerProgressPercent}
+                                    onChange={e => setOfficerProgressPercent(Number(e.target.value))}
+                                    className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#c62828]"
+                                  />
+                                  <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+                                    <span>0% नोंदणी</span>
+                                    <span>25% तपासणी</span>
+                                    <span>50% नोटीस</span>
+                                    <span>75% कारवाई</span>
+                                    <span>100% निष्कासित</span>
+                                  </div>
+                                </div>
+
+                                {/* Stage Selector */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <label className="block font-bold text-slate-300 mb-1">
+                                      सद्यस्थिती टप्पा (Execution Stage):
+                                    </label>
+                                    <select
+                                      value={officerStage}
+                                      onChange={e => setOfficerStage(e.target.value)}
+                                      className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-400"
+                                    >
+                                      <option value="Received (नोंदणीकृत)">Received (नोंदणीकृत - १५%)</option>
+                                      <option value="Squad Dispatched (पथक रवाना)">Squad Dispatched (पथक रवाना - ३०%)</option>
+                                      <option value="Field Inspection Complete (प्रत्यक्ष पाहणी पूर्ण)">Field Inspection Complete (पाहणी पूर्ण - ५०%)</option>
+                                      <option value="Notice Issued (नोटीस जारी)">Notice Issued (२४ तास नोटीस बजावली - ६५%)</option>
+                                      <option value="Demolition in Progress (निष्कासन कारवाई सुरू)">Demolition in Progress (निष्कासन सुरू - ८०%)</option>
+                                      <option value="Resolved & Cleared (कारवाई पूर्ण)">Resolved & Cleared (फलक जप्त / पूर्ण - १००%)</option>
+                                    </select>
+                                  </div>
+
+                                  <div>
+                                    <label className="block font-bold text-slate-300 mb-1">
+                                      नियुक्त अंमलबजावणी पथक (Assigned Squad):
+                                    </label>
+                                    <select
+                                      value={officerSquad}
+                                      onChange={e => setOfficerSquad(e.target.value)}
+                                      className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-400"
+                                    >
+                                      <option value="Sangli Enforcement Squad 01">Sangli Enforcement Squad 01 (सांगली पथक १)</option>
+                                      <option value="Miraj Rapid Response Squad">Miraj Rapid Response Squad (मिरज जलद प्रतिसाद)</option>
+                                      <option value="Kupwad Industrial Demolition Unit">Kupwad Industrial Demolition Unit (कुपवाड पथक)</option>
+                                      <option value="Central Special Task Force (SMKC STF)">Central Special Task Force (केंद्रीय एसटीएफ)</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                {/* Officer Remarks */}
+                                <div>
+                                  <label className="block font-bold text-slate-300 text-xs mb-1">
+                                    अधिकाऱ्यांचे प्रत्यक्ष कारवाई शेरे व निर्देश (Officer Implementation Remarks):
+                                  </label>
+                                  <textarea
+                                    rows="2"
+                                    value={officerRemarks}
+                                    onChange={e => setOfficerRemarks(e.target.value)}
+                                    placeholder="उदा. फलक काढण्यासाठी जेसीबी व हायड्रोलिक क्रेन पाचारण करण्यात आली आहे..."
+                                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-400"
+                                  />
+                                </div>
+
+                                {/* Submit Update Button */}
+                                <div className="flex items-center justify-between pt-1">
+                                  <span className="text-[11px] text-slate-400">
+                                    नागरिकांना हे शेरे त्यांच्या ट्रॅकरवर लगेच दिसतील.
+                                  </span>
+                                  <button
+                                    type="submit"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-lg hover:scale-105 active:scale-95"
+                                  >
+                                    कामाची प्रगती अद्ययावत करा (Save & Publish) ✓
+                                  </button>
+                                </div>
+                              </form>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </section>
+
+          </main>
+
+          {/* 6. OFFICIAL FOOTER (Exact 4-Column Layout from smkc.gov.in in #222222) */}
+          <footer className="bg-[#222222] text-white pt-10 pb-6 px-4 sm:px-8 border-t-4 border-[#c62828] text-xs no-print">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              
+              {/* Column 1: Organization & Contact */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <img src="./smkc_logo.png" alt="SMKC Logo" className="w-12 h-12 object-contain" />
+                  <h4 className="font-bold text-sm text-white leading-tight">
+                    सांगली मिरज आणि कुपवाड शहर महानगरपालिका
+                  </h4>
+                </div>
+                <div className="space-y-2 text-slate-300 text-[11px] leading-relaxed">
+                  <p>📍 शहर पोलीस ठाण्यासमोर, राजवाडा चौक, सांगली, महाराष्ट्र. पिन कोड: ४१६४१६</p>
+                  <p>📞 सांगली कार्यालयाशी संपर्क साधा: ०२३३-२३७३७२१ / २२ / २३</p>
+                  <p>✉️ ईमेल: smkcorporation@gmail.com</p>
+                </div>
+              </div>
+
+              {/* Column 2: Quick Links (त्वरित दुवे) */}
+              <div className="space-y-2.5">
+                <h4 className="font-bold text-sm text-amber-400 uppercase tracking-wider border-b border-slate-700 pb-1.5">
+                  त्वरित दुवे (Quick Links)
+                </h4>
+                <ul className="space-y-1.5 text-slate-300 text-[11px]">
+                  <li className="hover:text-amber-400 cursor-pointer">› सांगली शहराचा इतिहास</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› एसएमकेसी बद्दल (About SMKC)</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› नागरी तक्रारी निवारण</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› लोकसेवा हक्क अधिनियम (RTS)</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› नगरसेवक व प्रभाग रचना</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› निविदा (Tenders)</li>
+                  <li className="hover:text-amber-400 cursor-pointer">› वारंवार विचारले जाणारे प्रश्न (FAQ)</li>
+                </ul>
+              </div>
+
+              {/* Column 3: Social Media & Contacts (आमच्याशी संपर्क साधा) */}
+              <div className="space-y-2.5">
+                <h4 className="font-bold text-sm text-amber-400 uppercase tracking-wider border-b border-slate-700 pb-1.5">
+                  आमच्याशी संपर्क साधा
+                </h4>
+                <ul className="space-y-2 text-slate-300 text-[11px]">
+                  <li className="flex items-center gap-2 hover:text-white cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center font-bold">𝕏</span>
+                    <span>ट्विटर (X)</span>
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-white cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center font-bold">f</span>
+                    <span>Facebook फेसबुक</span>
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-white cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-pink-600 flex items-center justify-center font-bold">📸</span>
+                    <span>Instagram इंस्टाग्राम</span>
+                  </li>
+                  <li className="flex items-center gap-2 hover:text-white cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center font-bold">▶</span>
+                    <span>YouTube यूट्यूब चॅनल</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Column 4: Feedback QR Code (अभिप्राय) */}
+              <div className="space-y-2.5">
+                <h4 className="font-bold text-sm text-amber-400 uppercase tracking-wider border-b border-slate-700 pb-1.5">
+                  अभिप्राय (Citizen Feedback)
+                </h4>
+                <div className="bg-white p-2.5 rounded-xl w-28 h-28 mx-auto flex items-center justify-center border border-slate-400">
+                  <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://smkc.gov.in"
+                    alt="Feedback QR"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                  आपला अभिप्राय नोंदवण्यासाठी किंवा तक्रार करण्यासाठी QR कोड स्कॅन करा
+                </p>
+              </div>
+
+            </div>
+
+            {/* 7. BOTTOM COPYRIGHT & VISITOR COUNTER BAR (#111111) */}
+            <div className="mt-8 pt-4 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
+              <div className="text-center md:text-left">
+                © कॉपीराइट २०२५-२०२६ <strong>सांगली, मिरज आणि कुपवाड शहर महानगरपालिका</strong>. सर्व हक्क राखीव.
+                <span className="block text-[10px] text-slate-500 mt-0.5">
+                  अस्वीकृती | गोपनीयता धोरण | नियम व अटी | राष्ट्रीय सूचना-विज्ञान केंद्र (NIC) मार्गदर्शक तत्त्वे
+                </span>
+              </div>
+
+              {/* Live Visitor Counter */}
+              <div className="bg-[#111111] px-3 py-1.5 rounded-lg border border-slate-700 font-mono text-[10px] text-amber-300">
+                Visitor Count: Today: <strong>332</strong> | Month: <strong>1,303</strong> | Till Date: <strong>1,24,030</strong>
+              </div>
+            </div>
+          </footer>
+
+          {/* FLOATING ACTION BUTTONS: WhatsApp & Scroll To Top */}
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5">
+            <a
+              href="https://api.whatsapp.com/send?phone=912332373721"
+              target="_blank"
+              rel="noreferrer"
+              className="w-12 h-12 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 text-2xl"
+              title="मनपा व्हॉट्सॲप हेल्पलाईन"
+            >
+              💬
+            </a>
+            <button
+              onClick={scrollToTop}
+              className="w-12 h-12 rounded-full bg-[#c62828] hover:bg-[#b71c1c] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 font-black text-lg"
+              title="वर जा (Scroll To Top)"
+            >
+              ↑
+            </button>
+          </div>
+
+          {/* =========================================================================
+              MODAL: TOP SEARCH BAR BANNER SCANNER & 7-RULE CITIZEN SUBMISSION
+              ========================================================================= */}
+          {isScannerModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto no-print">
+              <div className="bg-white rounded-3xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+                
+                {/* Modal Top Bar */}
+                <div className="bg-gradient-to-r from-[#c62828] to-[#991b1b] text-white p-4 sm:p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-2xl backdrop-blur-sm">
+                      📷
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black leading-tight">
+                        सांगली मिरज कुपवाड मनपा: एआय स्मार्ट बॅनर स्कॅनर
+                      </h3>
+                      <p className="text-[11px] text-red-100">
+                        मोबाइल कॅमेऱ्याने थेट स्कॅन करा किंवा डेस्कटॉपवरून फोटो अपलोड करा • ७-नियम स्वयंचलित पडताळणी
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsScannerModalOpen(false)}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-lg flex items-center justify-center transition-all"
+                    title="बंद करा (Close)"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* 4-Step Progress Indicator */}
+                <div className="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center justify-between text-[11px] font-bold text-slate-600 overflow-x-auto">
+                  <div className={`flex items-center gap-1.5 whitespace-nowrap ${scannerModalStep === 'capture' ? 'text-[#c62828]' : 'text-slate-400'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${scannerModalStep === 'capture' ? 'bg-[#c62828] text-white' : 'bg-slate-200'}`}>१</span>
+                    <span>फोटो स्कॅन / अपलोड</span>
+                  </div>
+                  <span className="text-slate-300">→</span>
+                  <div className={`flex items-center gap-1.5 whitespace-nowrap ${scannerModalStep === 'analyzing' ? 'text-[#c62828]' : 'text-slate-400'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${scannerModalStep === 'analyzing' ? 'bg-[#c62828] text-white' : 'bg-slate-200'}`}>२</span>
+                    <span>७-नियम मनपा पडताळणी</span>
+                  </div>
+                  <span className="text-slate-300">→</span>
+                  <div className={`flex items-center gap-1.5 whitespace-nowrap ${scannerModalStep === 'citizen_login' ? 'text-[#c62828]' : 'text-slate-400'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${scannerModalStep === 'citizen_login' ? 'bg-[#c62828] text-white' : 'bg-slate-200'}`}>३</span>
+                    <span>नागरिक लॉगिन व तपशील</span>
+                  </div>
+                  <span className="text-slate-300">→</span>
+                  <div className={`flex items-center gap-1.5 whitespace-nowrap ${scannerModalStep === 'success' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${scannerModalStep === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-200'}`}>४</span>
+                    <span>पावती व टोकन</span>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-5 sm:p-7 space-y-6 max-h-[75vh] overflow-y-auto">
+
+                  {/* STEP 1: CAPTURE PHOTO (MOBILE CAMERA OR DESKTOP UPLOAD) */}
+                  {scannerModalStep === 'capture' && (
+                    <div className="space-y-6">
+                      <div className="text-center space-y-1">
+                        <h4 className="text-lg font-black text-slate-900">
+                          बॅनर किंवा होर्डिंगचा फोटो निवडा
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          आपण मोबाइलवर असल्यास थेट कॅमेरा सुरू होईल; डेस्कटॉप किंवा लॅपटॉपवर असल्यास फाईल अपलोड करा.
+                        </p>
+                      </div>
+
+                      {/* Hidden File Inputs */}
+                      <input
+                        id="modal-mobile-cam-input"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files && e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = ev => startModalSevenRuleAnalysis(ev.target.result, 'सांगली - मोबाइल कॅमेरा स्थान');
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <input
+                        id="modal-desktop-file-input"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files && e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = ev => startModalSevenRuleAnalysis(ev.target.result, 'सांगली - डेस्कटॉप अपलोड स्थान');
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+
+                      {/* Large Action Buttons */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Mobile Camera Option */}
+                        <label
+                          htmlFor="modal-mobile-cam-input"
+                          className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-[#c62828] bg-red-50/50 hover:bg-red-50 text-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                        >
+                          <div className="w-16 h-16 rounded-2xl bg-[#c62828] text-white flex items-center justify-center text-3xl mb-3 shadow-md group-hover:scale-110 transition-transform">
+                            📱
+                          </div>
+                          <span className="font-black text-sm text-slate-900 group-hover:text-[#c62828]">
+                            मोबाईल कॅमेरा स्कॅन
+                          </span>
+                          <span className="text-[11px] text-slate-500 mt-1">
+                            थेट स्मार्टफोन कॅमेऱ्याने फोटो काढा (Live Camera Capture)
+                          </span>
+                          <span className="mt-3 bg-[#c62828] text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                            कॅमेरा सुरू करा
+                          </span>
+                        </label>
+
+                        {/* Desktop Upload Option */}
+                        <label
+                          htmlFor="modal-desktop-file-input"
+                          className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                        >
+                          <div className="w-16 h-16 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-3xl mb-3 shadow-md group-hover:scale-110 transition-transform">
+                            💻
+                          </div>
+                          <span className="font-black text-sm text-slate-900 group-hover:text-slate-800">
+                            डेस्कटॉप / लॅपटॉप अपलोड
+                          </span>
+                          <span className="text-[11px] text-slate-500 mt-1">
+                            संगणकातील गॅलरी किंवा फोल्डरमधून फोटो निवडा (Upload File)
+                          </span>
+                          <span className="mt-3 bg-slate-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                            फाईल निवडा
+                          </span>
+                        </label>
+                      </div>
+
+                      {/* Demo Quick Test Photos */}
+                      <div className="border-t border-slate-200 pt-4 space-y-2">
+                        <span className="text-xs font-bold text-slate-600 block text-center">
+                          किंवा प्रत्यक्ष क्षेत्रीय चाचणीसाठी त्वरित फोटो निवडा (Field Test Samples):
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => startModalSevenRuleAnalysis(
+                              'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop&q=80',
+                              'सांगली - विश्रामबाग चौक'
+                            )}
+                            className="flex items-center gap-2 p-2 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-300 rounded-xl text-left transition-all text-xs"
+                          >
+                            <img
+                              src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=120&auto=format&fit=crop&q=80"
+                              alt="Sangli Sample"
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-900 block truncate">सांगली विश्रामबाग</span>
+                              <span className="text-[10px] text-red-600 block">राजकीय फ्लेक्स (विनापरवाना)</span>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => startModalSevenRuleAnalysis(
+                              'https://images.unsplash.com/photo-1508873696983-2df5293cb395?w=800&auto=format&fit=crop&q=80',
+                              'मिरज - गांधी चौक हायवे'
+                            )}
+                            className="flex items-center gap-2 p-2 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-300 rounded-xl text-left transition-all text-xs"
+                          >
+                            <img
+                              src="https://images.unsplash.com/photo-1508873696983-2df5293cb395?w=120&auto=format&fit=crop&q=80"
+                              alt="Miraj Sample"
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-900 block truncate">मिरज गांधी चौक</span>
+                              <span className="text-[10px] text-red-600 block">हाय-व्होल्टेज खांब धोका</span>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => startModalSevenRuleAnalysis(
+                              'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=800&auto=format&fit=crop&q=80',
+                              'कुपवाड - एमआयडीसी मुख्य रस्ता'
+                            )}
+                            className="flex items-center gap-2 p-2 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-300 rounded-xl text-left transition-all text-xs"
+                          >
+                            <img
+                              src="https://images.unsplash.com/photo-1577495508048-b635879837f1?w=120&auto=format&fit=crop&q=80"
+                              alt="Kupwad Sample"
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-900 block truncate">कुपवाड एमआयडीसी</span>
+                              <span className="text-[10px] text-red-600 block">अनधिकृत व्यावसायिक कमान</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 2: 7 RULES AUTOMATED SMKC EVALUATION */}
+                  {scannerModalStep === 'analyzing' && (
+                    <div className="space-y-6">
+                      <div className="text-center space-y-1">
+                        <span className="bg-red-100 text-[#c62828] text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">
+                          एआय डीप व्हिजन स्कॅनिंग चालू
+                        </span>
+                        <h4 className="text-lg font-black text-slate-900">
+                          मनपा नियमावलीनुसार ७-टप्प्यांची स्वयंचलित पडताळणी
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          महाराष्ट्र महानगरपालिका अधिनियम १९४९ व उच्च न्यायालय मार्गदर्शक तत्त्वांचे विश्लेषण
+                        </p>
+                      </div>
+
+                      {/* Image Preview with Scan Line */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                        <div className="md:col-span-5 relative rounded-2xl overflow-hidden border-2 border-[#c62828] h-56 bg-slate-950 shadow-inner">
+                          <img
+                            src={modalSelectedImage}
+                            alt="Scanned Preview"
+                            className="w-full h-full object-cover opacity-85"
+                          />
+                          <div className="absolute top-2 left-2 bg-black/80 text-emerald-400 font-mono text-[9px] px-2 py-0.5 rounded border border-emerald-500/30">
+                            GPS: 16.8455°N, 74.6015°E
+                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#c62828]/20 to-transparent animate-pulse pointer-events-none" />
+                        </div>
+
+                        {/* Step-by-Step 7 Rules List */}
+                        <div className="md:col-span-7 space-y-2">
+                          {modalRuleResults.map((r) => {
+                            const isProcessed = modalRuleIndex >= r.ruleNum;
+                            const isCurrent = modalRuleIndex === r.ruleNum - 1;
+
+                            return (
+                              <div
+                                key={r.ruleNum}
+                                className={`p-2.5 rounded-xl border transition-all text-xs ${
+                                  isProcessed
+                                    ? r.passed
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                                      : 'bg-red-50 border-red-300 text-red-950 font-medium'
+                                    : isCurrent
+                                    ? 'bg-amber-50 border-amber-400 text-amber-950 shadow-sm animate-pulse'
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold flex items-center gap-1.5">
+                                    <span>{isProcessed ? (r.passed ? '✓' : '✗') : isCurrent ? '⏳' : '○'}</span>
+                                    <span>{r.title}</span>
+                                  </span>
+                                  <span className="font-mono text-[10px] font-bold">
+                                    {isProcessed ? (r.passed ? 'वैध (PASS)' : 'उल्लंघन (FAIL)') : isCurrent ? 'पडताळणी चालू...' : 'प्रलंबित'}
+                                  </span>
+                                </div>
+                                {isProcessed && (
+                                  <p className="text-[11px] mt-1 text-slate-600 pl-4">
+                                    {r.detail}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center text-xs text-slate-600">
+                        नियम १ ते ७ विश्लेषण पूर्ण झाल्यावर स्वयंचलितरित्या नागरिक नोंदणी खिडकी उघडेल...
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: CITIZEN LOGIN & VERIFICATION (NAME & NUMBER MANDATORY, EMAIL OPTIONAL) */}
+                  {scannerModalStep === 'citizen_login' && (
+                    <form onSubmit={handleModalCitizenSubmit} className="space-y-5">
+                      <div className="text-center space-y-1">
+                        <div className="w-12 h-12 rounded-2xl bg-[#c62828] text-white flex items-center justify-center text-2xl mx-auto shadow-md">
+                          📝
+                        </div>
+                        <h4 className="text-lg font-black text-slate-900">
+                          नागरिक पडताळणी व नोंदणी (Citizen Verification)
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          मनपा डेटाबेसमध्ये फोटो व तक्रार नोंदवण्यापूर्वी आपले नाव व मोबाईल नंबर आवश्यक आहे.
+                        </p>
+                      </div>
+
+                      {/* Prominent Verification Notice */}
+                      <div className="bg-amber-50 border border-amber-300 text-amber-950 p-3 rounded-xl text-xs flex items-center gap-2">
+                        <span className="text-lg">📌</span>
+                        <span>
+                          <strong>नियम:</strong> नाव आणि १०-अंकी मोबाईल नंबर <strong>अनिवार्य</strong> आहे. ईमेल <strong>ऐच्छिक (Optional)</strong> आहे.
+                        </span>
+                      </div>
+
+                      {modalFormError && (
+                        <div className="p-3 bg-red-100 border border-red-300 text-red-800 text-xs font-bold rounded-xl text-center">
+                          {modalFormError}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Name (Mandatory) */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-800 mb-1">
+                            आपले पूर्ण नाव (Full Name) <span className="text-red-600 font-bold">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="उदा. राहुल शिंदे"
+                            value={modalCitizenData.name}
+                            onChange={e => setModalCitizenData({ ...modalCitizenData, name: e.target.value })}
+                            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Phone Number (Mandatory) */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-800 mb-1">
+                            मोबाईल नंबर (Mobile Number) <span className="text-red-600 font-bold">*</span>
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            maxLength="10"
+                            placeholder="उदा. 9822455120 (१० अंक)"
+                            value={modalCitizenData.phone}
+                            onChange={e => setModalCitizenData({ ...modalCitizenData, phone: e.target.value })}
+                            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Email (OPTIONAL) */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-800 mb-1">
+                            ईमेल आयडी (Email ID) <span className="text-slate-400 font-normal">(ऐच्छिक / Optional)</span>
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="उदा. rahul@gmail.com (नसेल तरी चालेल)"
+                            value={modalCitizenData.email}
+                            onChange={e => setModalCitizenData({ ...modalCitizenData, email: e.target.value })}
+                            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none"
+                          />
+                        </div>
+
+                        {/* City Dropdown */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-800 mb-1">
+                            शहर / मनपा प्रभाग (City / Prabhag)
+                          </label>
+                          <select
+                            value={modalCitizenData.city}
+                            onChange={e => setModalCitizenData({ ...modalCitizenData, city: e.target.value })}
+                            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none bg-white"
+                          >
+                            <option value="Sangli">सांगली शहर (Sangli Prabhag 01-08)</option>
+                            <option value="Miraj">मिरज शहर (Miraj Prabhag 09-15)</option>
+                            <option value="Kupwad">कुपवाड औद्योगिक शहर (Kupwad Prabhag 16-20)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Location Landmark */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          बॅनरचे अचूक स्थान / रस्ता / चौक (Location Landmark)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="उदा. विश्रामबाग गणपती मंदिर रस्ता, सांगली"
+                          value={modalCitizenData.location}
+                          onChange={e => setModalCitizenData({ ...modalCitizenData, location: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          अतिरिक्त माहिती / तक्रार नोंद (Notes / Remarks)
+                        </label>
+                        <textarea
+                          rows="2"
+                          placeholder="उदा. वाहतूक सिग्नल झाकले गेले असून पदपथावर मोठा लोखंडी सांगाडा लावला आहे..."
+                          value={modalCitizenData.notes}
+                          onChange={e => setModalCitizenData({ ...modalCitizenData, notes: e.target.value })}
+                          className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:border-[#c62828] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setScannerModalStep('capture')}
+                          className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-2"
+                        >
+                          ← मागे जा (Back)
+                        </button>
+                        <button
+                          type="submit"
+                          className="bg-[#c62828] hover:bg-[#b71c1c] text-white font-bold text-xs px-6 py-3 rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                        >
+                          मनपा डेटाबेसमध्ये नोंदणी करा (Submit to Database) →
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* STEP 4: SUCCESS RECEIPT & TRACKING TOKEN */}
+                  {scannerModalStep === 'success' && (
+                    <div className="space-y-6 text-center">
+                      <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mx-auto shadow-inner">
+                        ✓
+                      </div>
+
+                      <div className="space-y-1">
+                        <h4 className="text-xl font-black text-slate-900">
+                          स्कॅन यशस्वीरित्या मनपा डेटाबेसमध्ये नोंदवला गेला!
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          आपली तक्रार अधिकृतपणे नोंदवली गेली असून संबंधित प्रभाग अधिकाऱ्यांना वर्ग करण्यात आली आहे.
+                        </p>
+                      </div>
+
+                      {/* Tracking Token Badge */}
+                      <div className="bg-slate-900 text-white p-5 rounded-2xl max-w-md mx-auto space-y-2 border border-slate-800 shadow-xl">
+                        <span className="text-[10px] text-amber-400 uppercase font-mono font-bold tracking-wider">
+                          अधिकृत ट्रॅकिंग टोकन क्रमांक (Official Token)
+                        </span>
+                        <div className="text-2xl font-mono font-black text-amber-300">
+                          {lastSubmittedToken}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.clipboard) {
+                              navigator.clipboard.writeText(lastSubmittedToken);
+                              alert(`टोकन कॉपी केले: ${lastSubmittedToken}`);
+                            }
+                          }}
+                          className="inline-block bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1 rounded-lg border border-slate-700"
+                        >
+                          📋 टोकन कॉपी करा
+                        </button>
+                      </div>
+
+                      {/* Summary Box */}
+                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 max-w-md mx-auto text-left text-xs space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">तक्रारदार:</span>
+                          <span className="font-bold text-slate-900">{modalCitizenData.name} ({modalCitizenData.phone})</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">स्थान:</span>
+                          <span className="font-bold text-slate-900">{modalCitizenData.city} • {modalCitizenData.location || 'मुख्य रस्ता'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">प्रारंभिक दंड वसुली:</span>
+                          <span className="font-bold text-red-600 font-mono">₹१६,००० (MMC Act Sec 244)</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">कामाची सद्यस्थिती:</span>
+                          <span className="font-bold text-emerald-600">Received (नोंदणीकृत - १५%)</span>
+                        </div>
+                      </div>
+
+                      {/* Action Navigation Buttons */}
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsScannerModalOpen(false);
+                            const el = document.getElementById('officer-portal-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold text-xs px-6 py-3 rounded-xl transition-all shadow"
+                        >
+                          ↓ खाली अधिकारी कक्षात कामाची प्रगती पहा (Track Progress Below)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setIsScannerModalOpen(false)}
+                          className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-6 py-3 rounded-xl transition-all"
+                        >
+                          पूर्ण झाले (Close)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<SMKCApp />);
+  </script>
+</body>
+</html>
